@@ -69,7 +69,7 @@ void loop(){
         directionR = false; // set the direction to right if the joystick outputs a negative value
         refSpeedR = speedR*-1; // set the reference speed to the absolute value of the joystick output
       }
-      else if(speedL>0){
+      else if(speedL<0){
         directionL = false; // set the direction to left if the joystick outputs a positive value
         refSpeedL = speedL*-1; // set the reference speed to the absolute value of the joystick output
       }
