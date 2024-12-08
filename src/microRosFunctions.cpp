@@ -2,11 +2,11 @@
 // Created by leslier on 12/8/2024.
 //
 
-#include "microRosFunctions.h"
+
 
 #if defined(ROS) || defined(ROS_DEBUG)
-
-#include <micro_ros_arduino.h>
+#include "microRosFunctions.h"
+#include <micro_ros_platformio.h>
 
 #include <rcl/rcl.h>
 #include <rcl/error_handling.h>
@@ -101,11 +101,20 @@ void microRosSetup(unsigned int timer_timeout, const char* nodeName, const char*
 //            pubTopicName));
 
     // Create Subscriber
+#ifdef ROS
+    RCCHECK(rclc_subscription_init_default(
+            &subscriber,
+            &node,
+            ROSIDL_GET_MSG_TYPE_SUPPORT(wheelchair_sensor_msgs, msg, RefSpeed),
+            subTopicName));
+#elif ROS_DEBUG
     RCCHECK(rclc_subscription_init_default(
             &subscriber,
             &node,
             ROSIDL_GET_MSG_TYPE_SUPPORT(wheelchair_sensor_msgs, msg, Sensors),
             subTopicName));
+#endif
+
 
 
     // create timer,
