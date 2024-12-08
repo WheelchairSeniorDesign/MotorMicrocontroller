@@ -1,6 +1,10 @@
 #include <Arduino.h>
 #include <Adafruit_MCP4725.h>
 
+#if defined(ROS) || defined(ROS_DEBUG)
+#include "microRosFunctions.h"
+#endif
+
 Adafruit_MCP4725 dacA;
 Adafruit_MCP4725 dacB;
 // For Adafruit MCP4725A1 the address is 0x62 (default) or 0x63 (ADDR pin tied to VCC)
@@ -20,8 +24,9 @@ int directionL;
 int directionR;
 int enable;
 int speed;
-int refSpeed;
+int refSpeedInt;
 int motorSpeed;
+refSpeed omegaRef;
 
 
 void setup(){
@@ -34,15 +39,33 @@ void setup(){
     pinMode(directionRPin,OUTPUT);
     pinMode(brakePin,OUTPUT);
     pinMode(refSpeedPin,INPUT);
+
+#ifdef ROS
+    const char* nodeName = "motors_node";
+    const char* subTopicName = "refSpeed";
+    const char* pubTopicName = "motorSpeed";
+    microRosSetup(1, nodeName, subTopicName, pubTopicName);
+#elif ROS_DEBUG
+    const char* nodeName = "motors_node";
+    const char* subTopicName = "sensors";
+    const char* pubTopicName = "motorSpeed";
+    microRosSetup(1, nodeName, subTopicName, pubTopicName);
+#endif
 }
 
 void loop(){
-    refSpeed = digitalRead(refSpeedPin);
-    if(refSpeed > -1 ^^ refSpeed < 1){
+
+#if defined(ROS) || defined(ROS_DEBUG)
+    checkSubs();
+    omegaRef = getRefSpeed();
+#endif
+
+    refSpeedInt = digitalRead(refSpeedPin);
+    if(refSpeedInt == 0){
       brake = 0;
       enable = 0;
     }
 
-    refSpeed=refSpeed/4095;
-    dacA.setVoltage(refSpeed*4095, false);
+    refSpeedInt=refSpeedInt/4095;
+    dacA.setVoltage(refSpeedInt*4095, false);
 }
