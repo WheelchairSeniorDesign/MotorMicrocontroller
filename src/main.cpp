@@ -9,7 +9,9 @@ It will also read the speed of the motor and send it to the onboard computer.
 #include <Adafruit_MCP4725.h>
 
 #if defined(ROS) || defined(ROS_DEBUG)
+
 #include "microRosFunctions.h"
+
 #endif
 
 Adafruit_MCP4725 dacA;
@@ -36,26 +38,21 @@ int8_t refSpeedL; // value sent to the motor controller for speed of left motor
 refSpeed omegaRef;
 
 
-struc refSpeed{ // struct to hold the reference speed
-    int speedR;
-    int speedL;
-    }
-
-void setup(){
+void setup() {
     refSpeed joystickSpeed{}; // initiate struc which will hold the reference speed
     Serial.begin(115200); // start I2C communication protocol
     dacA.begin(0x62); // initiate the DACs
     dacB.begin(0x63);
-    pinMode(dacClockPin,OUTPUT); // set the pins to be used as output
-    pinMode(speedPin,OUTPUT);
-    pinMode(directionLPin,OUTPUT);
-    pinMode(directionRPin,OUTPUT);
-    pinMode(brakePin,OUTPUT);
+    pinMode(dacClockPin, OUTPUT); // set the pins to be used as output
+    pinMode(speedPin, OUTPUT);
+    pinMode(directionLPin, OUTPUT);
+    pinMode(directionRPin, OUTPUT);
+    pinMode(brakePin, OUTPUT);
     //pinMode(refSpeedPin,INPUT); // set the pins to be used as input
-    pinMode(motorSpeedPin,INPUT);
+    pinMode(motorSpeedPin, INPUT);
 }
 
-void loop(){
+void loop() {
 
 #if defined(ROS) || defined(ROS_DEBUG)
     checkSubs();
@@ -67,37 +64,27 @@ void loop(){
     speedR = joystickSpeed.speedR;
     speedL = joystickSpeed.speedL;
     */
-   // this part will be discussed with the sensors team
+    // this part will be discussed with the sensors team
     directionR = true; // initially forward direction
     directionL = true; // initially forward direction
     brake = false; // initially no brake
-    if(speedR == 0 && speedL == 0){ // if the reference speed is 0, stop the motor
-      brake = true; // activate the brake if joystick outputs 0 in both directions
-
-
-
-    refSpeedInt = digitalRead(refSpeedPin);
-    if(refSpeedInt == 0){
-      brake = 0;
-      enable = 0;
-    }
-
-    else{
-      brake = false; // deactivate the brake if joystick outputs a value other than 0
-      if(speedR<0){
-        directionR = false; // set the direction to right if the joystick outputs a negative value
-        refSpeedR = speedR*-1; // set the reference speed to the absolute value of the joystick output
-      }
-      else if(speedL<0){
-        directionL = false; // set the direction to left if the joystick outputs a positive value
-        refSpeedL = speedL*-1; // set the reference speed to the absolute value of the joystick output
-      }
-      else{
-        refSpeedR = speedR; // set the referrence speed to the joystick output
-        refSpeedL = speedL;
-      }
-      refSpeedR = refSpeedR*4095/100; // adjust the reference speed Right to the motor controller
-      refSpeedL = refSpeedL*4095/100; // adjust the reference speed Left to the motor controller
+    if (omegaRef.rightSpeed == 0 && omegaRef.leftSpeed == 0) { // if the reference speed is 0, stop the motor
+        brake = true; // activate the brake if joystick outputs 0 in both directions
+    } else {
+        brake = false; // deactivate the brake if joystick outputs a value other than 0
+        if (omegaRef.rightSpeed < 0) {
+            directionR = false; // set the direction to right if the joystick outputs a negative value
+            refSpeedR =
+                    omegaRef.rightSpeed * -1; // set the reference speed to the absolute value of the joystick output
+        } else if (omegaRef.leftSpeed < 0) {
+            directionL = false; // set the direction to left if the joystick outputs a positive value
+            refSpeedL = omegaRef.leftSpeed * -1; // set the reference speed to the absolute value of the joystick output
+        } else {
+            refSpeedR = omegaRef.rightSpeed; // set the referrence speed to the joystick output
+            refSpeedL = omegaRef.leftSpeed;
+        }
+        refSpeedR = refSpeedR * 4095 / 100; // adjust the reference speed Right to the motor controller
+        refSpeedL = refSpeedL * 4095 / 100; // adjust the reference speed Left to the motor controller
 
     }
 

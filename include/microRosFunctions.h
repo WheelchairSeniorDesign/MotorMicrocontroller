@@ -6,14 +6,7 @@
 #define MOTORMICROCONTROLLER_MICROROSFUNCTIONS_H
 
 #include <Arduino.h>
-
-/**
- * Struct representing the reference speed and direction.
- */
-struct refSpeed {
-    int8_t leftSpeed{};      ///< Speed of the left wheel.
-    int8_t rightSpeed{};     ///< Speed of the right wheel.
-};
+#include "RefSpeed.h"
 
 /**
  * Function to setup the microROS node.
