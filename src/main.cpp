@@ -1,12 +1,19 @@
-/* Eren Tekbas for ECE Senior Design 2025 
+/* Eren Tekbas for ECE Senior Design 2025
 MicroController Handling Reference Speed
-This code is for the microcontroller to retrieve the target speed from the onboard 
-computer and send it to the motor controller after adjusting it. 
+This code is for the microcontroller to retrieve the target speed from the onboard
+computer and send it to the motor controller after adjusting it.
 It will also read the speed of the motor and send it to the onboard computer.
 */
 
 #include <Arduino.h>
 #include <Adafruit_MCP4725.h>
+#include "RefSpeed.h"
+
+#if defined(ROS) || defined(ROS_DEBUG)
+
+#include "microRosFunctions.h"
+
+#endif
 
 Adafruit_MCP4725 dacA;
 Adafruit_MCP4725 dacB;
@@ -29,29 +36,34 @@ bool enable; // enable for motor controller
 int motorSpeed; // value read from the motor speed sensor
 int16_t refSpeedR; // value sent to the motor controller for speed of right motor
 int16_t refSpeedL; // value sent to the motor controller for speed of left motor
+refSpeed refSpeedSensors;
 
-/*struc refSpeed{ // struct to hold the reference speed
-    int speedR;
-    int speedL;
-    }*/
 
-void setup(){
-    //refSpeed joystickSpeed{}; // initiate struc which will hold the reference speed
+void setup() {
     Serial.begin(115200); // start I2C communication protocol
     dacA.begin(0x62); // initiate the DACs
     dacB.begin(0x63);
-    pinMode(dacClockPin,OUTPUT); // set the pins to be used as output
-    pinMode(speedPin,OUTPUT);
+    //pinMode(dacClockPin,OUTPUT); // set the pins to be used as output
+    //pinMode(speedPin,OUTPUT);
     pinMode(directionLPin,OUTPUT);
     pinMode(directionRPin,OUTPUT);
     pinMode(brakePin,OUTPUT);
     //pinMode(refSpeedPin,INPUT); // set the pins to be used as input
     pinMode(motorSpeedPin,INPUT);
+
+#if defined(ROS) || defined(ROS_DEBUG)
+   microRosSetup(100, "motor_node", "ref_speed", "test");
+#endif
 }
 
-void loop(){
+void loop() {
 
-  //enable = true; // enable the motor controller
+#if defined(ROS) || defined(ROS_DEBUG)
+    checkSubs();
+    refSpeedSensors = getRefSpeed();
+#endif
+
+    //enable = true; // enable the motor controller
     /*joystickSpeed{} = digitalRead(refSpeedPin); // read the reference speed from the onboard computer
     speedR = joystickSpeed.speedR;
     speedL = joystickSpeed.speedL;
@@ -85,8 +97,12 @@ void loop(){
 
     }
     */
-    refSpeedR=(1/2)*4095;
-    refSpeedL=(1/2)*4095;
+    float tempRefSpeedR = abs(refSpeedSensors.rightSpeed) * 4095 / 100;
+    float tempRefSpeedL = abs(refSpeedSensors.leftSpeed) * 4095 / 100;
+
+
+    refSpeedR=static_cast<int16_t>(tempRefSpeedR);
+    refSpeedL=static_cast<int16_t>(tempRefSpeedL);
 
     digitalWrite(directionLPin,directionL);
     digitalWrite(directionRPin,directionR);
