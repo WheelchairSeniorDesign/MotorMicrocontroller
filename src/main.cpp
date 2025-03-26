@@ -41,8 +41,16 @@ refSpeed refSpeedSensors;
 
 void setup() {
     Serial.begin(115200); // start I2C communication protocol
-    dacA.begin(0x62); // initiate the DACs
-    dacB.begin(0x63);
+
+  // initiate the DACs
+    while (!dacA.begin(0x62)) {
+        Serial.println("DAC A not found");
+        delay(500);
+    }
+    while (!dacB.begin(0x63)) {
+      Serial.println("DAC B not found");
+      delay(500);
+    }
     //pinMode(dacClockPin,OUTPUT); // set the pins to be used as output
     //pinMode(speedPin,OUTPUT);
     pinMode(directionLPin,OUTPUT);
@@ -51,8 +59,11 @@ void setup() {
     //pinMode(refSpeedPin,INPUT); // set the pins to be used as input
     pinMode(motorSpeedPin,INPUT);
 
+    brake = true;
+    enable = false;
+
 #if defined(ROS) || defined(ROS_DEBUG)
-   microRosSetup(100, "motor_node", "ref_speed", "test");
+   microRosSetup(1, "motor_node", "ref_speed", "test");
 #endif
 }
 
@@ -61,6 +72,7 @@ void loop() {
 #if defined(ROS) || defined(ROS_DEBUG)
     checkSubs();
     refSpeedSensors = getRefSpeed();
+    transmitDac(refSpeedL, refSpeedR);
 #endif
 
     //enable = true; // enable the motor controller
@@ -76,7 +88,7 @@ void loop() {
     if(speedR == 0 && speedL == 0){ // if the reference speed is 0, stop the motor
       brake = true; // activate the brake if joystick outputs 0 in both directions
     }
-  
+
     else{
       brake = false; // deactivate the brake if joystick outputs a value other than 0
       if(speedR<0){
@@ -92,8 +104,8 @@ void loop() {
         refSpeedL = speedL;
       }
 
-      refSpeedR = refSpeedR*4095/100; // adjust the reference speed Right to the motor controller
-      refSpeedL = refSpeedL*4095/100; // adjust the reference speed Left to the motor controller
+      //refSpeedR = refSpeedR*4095/100; // adjust the reference speed Right to the motor controller
+      //refSpeedL = refSpeedL*4095/100; // adjust the reference speed Left to the motor controller
 
     }
     */
