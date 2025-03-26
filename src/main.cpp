@@ -72,7 +72,10 @@ void loop() {
 #if defined(ROS) || defined(ROS_DEBUG)
     checkSubs();
     refSpeedSensors = getRefSpeed();
+
+#ifdef ROS_DEBUG
     transmitDac(refSpeedL, refSpeedR);
+#endif
 #endif
 
     //enable = true; // enable the motor controller

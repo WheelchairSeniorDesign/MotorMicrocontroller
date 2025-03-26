@@ -18,7 +18,6 @@
 #include <wheelchair_sensor_msgs/msg/ref_speed.h>
 #include <wheelchair_sensor_msgs/msg/dac_values.h>
 #include <wheelchair_sensor_msgs/msg/sensors.h>
-#include <std_msgs/msg/int32.h>
 #elif ROS
 #include <wheelchair_sensor_msgs/msg/ref_speed.h>
 #endif
@@ -146,11 +145,13 @@ void microRosSetup(unsigned int timer_timeout, const char* nodeName, const char*
 
     // create timer,
     //unsigned int timer_timeout = 1;
+#ifdef ROS_DEBUG
      RCCHECK(rclc_timer_init_default(
              &timer,
              &support,
              RCL_MS_TO_NS(timer_timeout),
              timer_callback));
+#endif
 
     //create executor
     //Number of handles = # timers + # subscriptions + # clients + # services
@@ -159,6 +160,7 @@ void microRosSetup(unsigned int timer_timeout, const char* nodeName, const char*
     // add sub to executor
     RCCHECK(rclc_executor_add_subscription(&executor, &subscriber, &refSpeedMsg, &subscription_callback, ON_NEW_DATA));
 
+#ifdef ROS_DEBUG
     // add pub to executor
     RCCHECK(rclc_executor_add_timer(&executor, &timer));
 
@@ -166,6 +168,7 @@ void microRosSetup(unsigned int timer_timeout, const char* nodeName, const char*
     // sensorMsg.right_speed = 0;
     dacMsg.left_dac = 0;
     dacMsg.right_dac = 0;
+#endif
 }
 
 // void transmitMsg(refSpeed omegaRef){
