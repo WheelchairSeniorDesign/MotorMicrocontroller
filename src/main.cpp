@@ -19,6 +19,8 @@ int directionRPin = 13;
 int enablePin = 11;
 int speedPin = 4;
 int motorSpeedPin = 22;
+int speedFreqRPin = 15;
+int speedFreqLPin = 14;
 
 
 //variables to be used in the code
@@ -35,19 +37,60 @@ int16_t refSpeedL; // value sent to the motor controller for speed of left motor
     int speedL;
     }*/
 
+// //variables to handle frequecy reading and tranfer to speed
+// volatile uint32_t pulse_count_1 = 0;
+// volatile uint32_t pulse_count_2 = 0;
+//
+// void pulse_handler_1() { pulse_count_1++; }
+// void pulse_handler_2() { pulse_count_2++; }
+//
+// float freqR;
+// float freqL;
+// float speedR;
+// float speedL;
+
 void setup(){
     //refSpeed joystickSpeed{}; // initiate struc which will hold the reference speed
     Serial.begin(115200); // start I2C communication protocol
     dacA.begin(0x62); // initiate the DACs
     dacB.begin(0x63);
-    pinMode(dacClockPin,OUTPUT); // set the pins to be used as output
+
     pinMode(speedPin,OUTPUT);
     pinMode(directionLPin,OUTPUT);
     pinMode(directionRPin,OUTPUT);
     pinMode(brakePin,OUTPUT);
     //pinMode(refSpeedPin,INPUT); // set the pins to be used as input
-    pinMode(motorSpeedPin,INPUT);
+    //pinMode(motorSpeedPin,INPUT);
+
+
+    // pinMode(speedFreqRPin, INPUT_PULLDOWN);
+    // pinMode(speedFreqLPin, INPUT_PULLDOWN);
+    //
+    // attachInterrupt(digitalPinToInterrupt(speedFreqRPin), pulse_handler_1, RISING);
+    // attachInterrupt(digitalPinToInterrupt(speedFreqLPin), pulse_handler_2, RISING);
+
 }
+
+// void getFreq() {
+//   pulse_count_1 = 0;
+//   pulse_count_2 = 0;
+//   uint32_t start_time = millis();
+//
+//   delay(1000);  // Measure for 1 second
+//
+//   uint32_t elapsed_time = millis() - start_time;
+//   freqR = (pulse_count_1 * 1000.0) / elapsed_time;  // Hz
+//   freqL = (pulse_count_2 * 1000.0) / elapsed_time;  // Hz
+//
+// }
+
+//converssion of frequency to MPH
+// void freqToSpeed(){
+//   speedR = (freqR*10/21.33)*3.14*12.5*60/63360;
+//   speedL = (freqL*10/21.33)*3.14*12.5*60/63360;
+// }
+
+// uncomment freq L
 
 void loop(){
 
@@ -85,14 +128,30 @@ void loop(){
 
     }
     */
-    refSpeedR=(1/2)*4095;
-    refSpeedL=(1/2)*4095;
 
-    digitalWrite(directionLPin,directionL);
-    digitalWrite(directionRPin,directionR);
-    digitalWrite(enablePin, enable);
-    digitalWrite(brakePin, brake);
+
+    // getFreq();
+    // freqToSpeed();
+
+    // Serial.print("Right motor freq: ");
+    // //Serial.print(PULSE_PIN_1);
+    // Serial.print(" Frequency: ");
+    // Serial.print(freqR);
+    // //Serial.print(freqL);
+    // Serial.println(" Hz");
+    // //Serial.flush();  // Ensures all data is sent before continuing
+    //serial print does not work with dac.setVoltage
+
+
+    refSpeedR= 4095;
+    refSpeedL= 4095;
+
+    digitalWrite(directionLPin,false);//true is backwards, false forward
+    digitalWrite(directionRPin,false);
+    digitalWrite(enablePin, false);
+    digitalWrite(brakePin, true);
     dacA.setVoltage(refSpeedR, false);
     dacB.setVoltage(refSpeedL, false);
+
 
 }
