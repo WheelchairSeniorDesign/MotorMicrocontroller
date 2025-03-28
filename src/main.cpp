@@ -38,6 +38,18 @@ int16_t refSpeedR; // value sent to the motor controller for speed of right moto
 int16_t refSpeedL; // value sent to the motor controller for speed of left motor
 refSpeed refSpeedSensors;
 
+// //variables to handle frequecy reading and tranfer to speed
+// volatile uint32_t pulse_count_1 = 0;
+// volatile uint32_t pulse_count_2 = 0;
+//
+// void pulse_handler_1() { pulse_count_1++; }
+// void pulse_handler_2() { pulse_count_2++; }
+//
+// float freqR;
+// float freqL;
+// float speedR;
+// float speedL;
+
 
 void setup() {
     Serial.begin(115200); // start I2C communication protocol
@@ -59,13 +71,42 @@ void setup() {
     //pinMode(refSpeedPin,INPUT); // set the pins to be used as input
     pinMode(motorSpeedPin,INPUT);
 
-    brake = true;
-    enable = false;
+    brake = false;
+    enable = true;
+
+    // pinMode(speedFreqRPin, INPUT_PULLDOWN);
+    // pinMode(speedFreqLPin, INPUT_PULLDOWN);
+    // attachInterrupt(digitalPinToInterrupt(speedFreqRPin), pulse_handler_1, RISING);
+    // attachInterrupt(digitalPinToInterrupt(speedFreqLPin), pulse_handler_2, RISING);
+
+
+
+
 
 #if defined(ROS) || defined(ROS_DEBUG)
    microRosSetup(1, "motor_node", "ref_speed", "test");
 #endif
 }
+
+// void getFreq() {
+//   pulse_count_1 = 0;
+//   pulse_count_2 = 0;
+//   uint32_t start_time = millis();
+//
+//   delay(1000);  // Measure for 1 second
+//
+//   uint32_t elapsed_time = millis() - start_time;
+//   freqR = (pulse_count_1 * 1000.0) / elapsed_time;  // Hz
+//   freqL = (pulse_count_2 * 1000.0) / elapsed_time;  // Hz
+//
+// }
+
+
+//converssion of frequency to MPH
+// void freqToSpeed(){
+//   speedR = (freqR*10/21.33)*3.14*12.5*60/63360;
+//   speedL = (freqL*10/21.33)*3.14*12.5*60/63360;
+// }
 
 void loop() {
 
@@ -112,6 +153,30 @@ void loop() {
 
     }
     */
+
+    enable = true; // enable the motor controller
+    if (refSpeedSensors.rightSpeed == 0 && refSpeedSensors.leftSpeed == 0) {
+        brake = false;
+    }
+    else {
+        brake = true;
+    }
+    //add break if emergency button is pushed
+
+    if (refSpeedSensors.rightSpeed > 0) {
+        directionR = false;
+    }
+    else {
+        directionR = true;
+    }
+
+    if (refSpeedSensors.leftSpeed > 0) {
+        directionR = false;
+    }
+    else {
+        directionR = true;
+    }
+
     float tempRefSpeedR = abs(refSpeedSensors.rightSpeed) * 4095 / 100;
     float tempRefSpeedL = abs(refSpeedSensors.leftSpeed) * 4095 / 100;
 
@@ -125,5 +190,6 @@ void loop() {
     digitalWrite(brakePin, brake);
     dacA.setVoltage(refSpeedR, false);
     dacB.setVoltage(refSpeedL, false);
-
+    //getFreq();
+    //freqToSpeed();
 }
