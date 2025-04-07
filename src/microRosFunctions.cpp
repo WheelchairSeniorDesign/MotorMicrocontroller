@@ -15,6 +15,8 @@
 
 //Used to subscribe to raw joystick data or processed reference speed
 #ifdef ROS_DEBUG
+#include <wheelchair_sensor_msgs/msg/ref_speed.h>
+#include <wheelchair_sensor_msgs/msg/dac_values.h>
 #include <wheelchair_sensor_msgs/msg/sensors.h>
 #elif ROS
 #include <wheelchair_sensor_msgs/msg/ref_speed.h>
@@ -23,16 +25,17 @@
 //Publisher
 // rcl_publisher_t publisher;
 // wheelchair_sensor_msgs__msg__Sensors sensorMsg;
-// rclc_executor_t pub_executor;
+rclc_executor_t executor;
 
 //Subscriber
 rcl_subscription_t subscriber;
 #ifdef ROS_DEBUG
 wheelchair_sensor_msgs__msg__Sensors refSpeedMsg;
+rcl_publisher_t dacPublisher;
+wheelchair_sensor_msgs__msg__DacValues dacMsg;
 #elif ROS
 wheelchair_sensor_msgs__msg__RefSpeed refSpeedMsg;
 #endif
-rclc_executor_t executor_sub;
 
 rclc_support_t support;
 rcl_allocator_t allocator;
@@ -49,18 +52,27 @@ void error_loop() {
     }
 }
 
-// void timer_callback(rcl_timer_t * inputTimer, int64_t last_call_time)
-// {
-//     RCLC_UNUSED(last_call_time);
-//     if (inputTimer != NULL) {
-//         RCSOFTCHECK(rcl_publish(&publisher, &sensorMsg, NULL));
-//     }
-// }
+#ifdef ROS_DEBUG
+void timer_callback(rcl_timer_t * inputTimer, int64_t last_call_time)
+{
+    RCLC_UNUSED(last_call_time);
+    if (inputTimer != NULL) {
+        RCSOFTCHECK(rcl_publish(&dacPublisher, &dacMsg, NULL));
+    }
+}
+
+void transmitDac(int16_t leftDacValue, int16_t rightDacValue) {
+    dacMsg.left_dac = leftDacValue;
+    dacMsg.right_dac = rightDacValue;
+    RCSOFTCHECK(rclc_executor_spin_some(&executor, RCL_MS_TO_NS(1)));
+}
+#endif
 
 void subscription_callback(const void *msgin)
 {
 #ifdef ROS_DEBUG
     const wheelchair_sensor_msgs__msg__Sensors *msg = (const wheelchair_sensor_msgs__msg__Sensors *)msgin;
+    refSpeedMsg = *msg;
     //Try using Serial1 to use a Uart adapter to print this out
 //    Serial1.print("Left Speed: ");
 //    Serial1.println(msg->left_speed);
@@ -68,11 +80,11 @@ void subscription_callback(const void *msgin)
 //    Serial1.println(msg->right_speed);
 
 
-    if (msg->left_speed == 100 || msg->right_speed == 100) {
-        digitalWrite(LED_BUILTIN, HIGH);
-    } else {
-        digitalWrite(LED_BUILTIN, LOW);
-    }
+    // if (msg->left_speed == 100 || msg->right_speed == 100) {
+    //     digitalWrite(LED_BUILTIN, HIGH);
+    // } else {
+    //     digitalWrite(LED_BUILTIN, LOW);
+    // }
 #elif ROS
     const wheelchair_sensor_msgs__msg__RefSpeed *msg = (const wheelchair_sensor_msgs__msg__RefSpeed *)msgin;
     refSpeedMsg = *msg;
@@ -108,44 +120,66 @@ void microRosSetup(unsigned int timer_timeout, const char* nodeName, const char*
             ROSIDL_GET_MSG_TYPE_SUPPORT(wheelchair_sensor_msgs, msg, RefSpeed),
             subTopicName));
 #elif ROS_DEBUG
-    RCCHECK(rclc_subscription_init_default(
+    // RCCHECK(rclc_subscription_init_default(
+    //         &subscriber,
+    //         &node,
+    //         ROSIDL_GET_MSG_TYPE_SUPPORT(wheelchair_sensor_msgs, msg, Sensors),
+    //         subTopicName));
+
+    RCCHECK(rclc_subscription_init_best_effort(
             &subscriber,
             &node,
-            ROSIDL_GET_MSG_TYPE_SUPPORT(wheelchair_sensor_msgs, msg, Sensors),
+            ROSIDL_GET_MSG_TYPE_SUPPORT(wheelchair_sensor_msgs, msg, RefSpeed),
             subTopicName));
+
+    // create publisher
+    RCCHECK(rclc_publisher_init_best_effort(
+        &dacPublisher,
+        &node,
+        ROSIDL_GET_MSG_TYPE_SUPPORT(wheelchair_sensor_msgs, msg, DacValues),
+        "dac_value"));
+
 #endif
 
 
 
     // create timer,
     //unsigned int timer_timeout = 1;
-    // RCCHECK(rclc_timer_init_default(
-    //         &timer,
-    //         &support,
-    //         RCL_MS_TO_NS(timer_timeout),
-    //         timer_callback));
+#ifdef ROS_DEBUG
+     RCCHECK(rclc_timer_init_default(
+             &timer,
+             &support,
+             RCL_MS_TO_NS(timer_timeout),
+             timer_callback));
+#endif
 
-    // create pub executor
-    // RCCHECK(rclc_executor_init(&pub_executor, &support.context, 1, &allocator));
-    // RCCHECK(rclc_executor_add_timer(&pub_executor, &timer));
+    //create executor
+    //Number of handles = # timers + # subscriptions + # clients + # services
+    RCCHECK(rclc_executor_init(&executor, &support.context, 3, &allocator));
 
-    // create sub executor
-    RCCHECK(rclc_executor_init(&executor_sub, &support.context, 1, &allocator));
-    RCCHECK(rclc_executor_add_subscription(&executor_sub, &subscriber, &refSpeedMsg, &subscription_callback, ON_NEW_DATA));
+    // add sub to executor
+    RCCHECK(rclc_executor_add_subscription(&executor, &subscriber, &refSpeedMsg, &subscription_callback, ON_NEW_DATA));
+
+#ifdef ROS_DEBUG
+    // add pub to executor
+    RCCHECK(rclc_executor_add_timer(&executor, &timer));
 
     // sensorMsg.left_speed = 0;
     // sensorMsg.right_speed = 0;
+    dacMsg.left_dac = 0;
+    dacMsg.right_dac = 0;
+#endif
 }
 
 // void transmitMsg(refSpeed omegaRef){
 //     sensorMsg.left_speed = omegaRef.leftSpeed;
 //     sensorMsg.right_speed = omegaRef.rightSpeed;
 //
-//     RCSOFTCHECK(rclc_executor_spin_some(&pub_executor, RCL_MS_TO_NS(10)));
+//     RCSOFTCHECK(rclc_executor_spin_some(&executor, RCL_MS_TO_NS(10)));
 // }
 
 void checkSubs() {
-    RCCHECK(rclc_executor_spin_some(&executor_sub, RCL_MS_TO_NS(100)));
+    RCCHECK(rclc_executor_spin_some(&executor, RCL_MS_TO_NS(1)));
 }
 
 refSpeed getRefSpeed() {

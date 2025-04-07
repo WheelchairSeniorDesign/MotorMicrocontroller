@@ -34,4 +34,8 @@ void checkSubs();
  */
 refSpeed getRefSpeed();
 
+#ifdef ROS_DEBUG
+void transmitDac(int16_t leftDacValue, int16_t rightDacValue);
+#endif
+
 #endif //MOTORMICROCONTROLLER_MICROROSFUNCTIONS_H
