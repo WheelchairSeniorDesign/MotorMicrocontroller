@@ -15,7 +15,7 @@
 #include <wheelchair_sensor_msgs/msg/ref_speed.h>
 #include <wheelchair_sensor_msgs/msg/dac_values.h>
 #include <wheelchair_sensor_msgs/msg/sensors.h>
-#include <wheelchair_sensor_msgs/msg/battery_status.h> // BATTERY Message
+#include <wheelchair_sensor_msgs/msg/battery.h> // BATTERY Message
 #elif ROS
 #include <wheelchair_sensor_msgs/msg/ref_speed.h>
 #endif
