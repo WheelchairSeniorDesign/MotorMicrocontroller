@@ -154,7 +154,7 @@ void loop() {
     }
     */
 
-    enable = true; // enable the motor controller
+    enable = false; // enable the motor controller
     if (refSpeedSensors.rightSpeed == 0 && refSpeedSensors.leftSpeed == 0) {
         brake = false;
     }
@@ -171,14 +171,15 @@ void loop() {
     }
 
     if (refSpeedSensors.leftSpeed > 0) {
-        directionR = false;
+        directionL = false;
     }
     else {
-        directionR = true;
+        directionL = true;
     }
 
-    float tempRefSpeedR = abs(refSpeedSensors.rightSpeed) * 4095 / 100;
-    float tempRefSpeedL = abs(refSpeedSensors.leftSpeed) * 4095 / 100;
+    //4095 is max, changed for testing
+    float tempRefSpeedR = abs(refSpeedSensors.rightSpeed) * 1000 / 100;
+    float tempRefSpeedL = abs(refSpeedSensors.leftSpeed) * 1000 / 100;
 
 
     refSpeedR=static_cast<int16_t>(tempRefSpeedR);
