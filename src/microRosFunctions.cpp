@@ -2,7 +2,7 @@
 
 #if defined(ROS) || defined(ROS_DEBUG)
 #include "microRosFunctions.h"
-#include "BatteryFunctions.h"  // include battery reading functions
+#include "BatteryFunctions.h"  // BATTERY: include battery reading functions
 #include <micro_ros_platformio.h>
 
 #include <rcl/rcl.h>
@@ -15,7 +15,7 @@
 #include <wheelchair_sensor_msgs/msg/ref_speed.h>
 #include <wheelchair_sensor_msgs/msg/dac_values.h>
 #include <wheelchair_sensor_msgs/msg/sensors.h>
-#include <wheelchair_sensor_msgs/msg/battery.h> // BATTERY Message
+#include <wheelchair_sensor_msgs/msg/battery.h> // BATTERY
 #elif ROS
 #include <wheelchair_sensor_msgs/msg/ref_speed.h>
 #endif
@@ -30,10 +30,10 @@ wheelchair_sensor_msgs__msg__Sensors refSpeedMsg;
 rcl_publisher_t dacPublisher;
 wheelchair_sensor_msgs__msg__DacValues dacMsg;
 
-// battery publisher and timer
+// BATTERY: battery publisher and timer
 rcl_publisher_t batteryPublisher;
 rcl_timer_t batteryTimer;
-wheelchair_sensor_msgs__msg__BatteryStatus batteryMsg;
+wheelchair_sensor_msgs__msg__Battery batteryMsg;
 
 #elif ROS
 wheelchair_sensor_msgs__msg__RefSpeed refSpeedMsg;
@@ -62,7 +62,7 @@ void timer_callback(rcl_timer_t * inputTimer, int64_t last_call_time) {
     }
 }
 
-//  callback to publish battery status
+// BATTERY: callback to publish battery status
 void battery_timer_callback(rcl_timer_t *input_timer, int64_t last_call_time) {
     RCLC_UNUSED(last_call_time);
     if (input_timer != NULL) {
@@ -119,11 +119,11 @@ void microRosSetup(unsigned int timer_timeout, const char* nodeName, const char*
         ROSIDL_GET_MSG_TYPE_SUPPORT(wheelchair_sensor_msgs, msg, DacValues),
         "dac_value"));
 
-    //init publisher and timer
+    // BATTERY: init publisher and timer
     RCCHECK(rclc_publisher_init_default(
         &batteryPublisher,
         &node,
-        ROSIDL_GET_MSG_TYPE_SUPPORT(wheelchair_sensor_msgs, msg, BatteryStatus),
+        ROSIDL_GET_MSG_TYPE_SUPPORT(wheelchair_sensor_msgs, msg, Battery),
         "battery_status"));
 
     RCCHECK(rclc_timer_init_default(
@@ -146,11 +146,11 @@ void microRosSetup(unsigned int timer_timeout, const char* nodeName, const char*
 
 #ifdef ROS_DEBUG
     RCCHECK(rclc_executor_add_timer(&executor, &timer));
-    RCCHECK(rclc_executor_add_timer(&executor, &batteryTimer)); // add battery timer to executor
+    RCCHECK(rclc_executor_add_timer(&executor, &batteryTimer)); // BATTERY: add battery timer to executor
 
     dacMsg.left_dac = 0;
     dacMsg.right_dac = 0;
-    initBatterySensor();  // initialize ADC hardware
+    initBatterySensor();  // BATTERY: initialize ADC hardware
 #endif
 }
 
