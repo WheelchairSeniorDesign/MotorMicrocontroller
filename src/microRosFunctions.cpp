@@ -67,9 +67,8 @@ void battery_timer_callback(rcl_timer_t *input_timer, int64_t last_call_time) {
     RCLC_UNUSED(last_call_time);
     if (input_timer != NULL) {
         float voltage = readBatteryVoltage();
-        float percentage = calculateBatteryPercentage(voltage);
-        batteryMsg.voltage = voltage;
-        batteryMsg.percentage = percentage;
+        int8_t percent = calculateBatteryPercentage(voltage);
+        batteryMsg.battery_percent = percent;
         RCSOFTCHECK(rcl_publish(&batteryPublisher, &batteryMsg, NULL));
     }
 }
