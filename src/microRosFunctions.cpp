@@ -15,6 +15,7 @@
 #include <wheelchair_sensor_msgs/msg/ref_speed.h>
 #include <wheelchair_sensor_msgs/msg/dac_values.h>
 #include <wheelchair_sensor_msgs/msg/sensors.h>
+#include <wheelchair_sensor_msgs/msg/battery.h> // BATTERY
 
 #elif ROS
 #include <wheelchair_sensor_msgs/msg/ref_speed.h>
@@ -31,7 +32,10 @@ wheelchair_sensor_msgs__msg__Sensors refSpeedMsg;
 rcl_publisher_t dacPublisher;
 wheelchair_sensor_msgs__msg__DacValues dacMsg;
 
-
+// BATTERY: battery publisher and timer
+rcl_publisher_t batteryPublisher;
+rcl_timer_t batteryTimer;
+wheelchair_sensor_msgs__msg__Battery batteryMsg;
 
 #elif ROS
 wheelchair_sensor_msgs__msg__RefSpeed refSpeedMsg;
