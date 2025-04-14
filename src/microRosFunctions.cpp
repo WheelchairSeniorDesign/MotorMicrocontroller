@@ -15,9 +15,10 @@
 #include <wheelchair_sensor_msgs/msg/ref_speed.h>
 #include <wheelchair_sensor_msgs/msg/dac_values.h>
 #include <wheelchair_sensor_msgs/msg/sensors.h>
-#include <wheelchair_sensor_msgs/msg/battery.h> // BATTERY
+
 #elif ROS
 #include <wheelchair_sensor_msgs/msg/ref_speed.h>
+#include <wheelchair_sensor_msgs/msg/battery.h> // BATTERY
 #endif
 
 // Executor
@@ -30,13 +31,15 @@ wheelchair_sensor_msgs__msg__Sensors refSpeedMsg;
 rcl_publisher_t dacPublisher;
 wheelchair_sensor_msgs__msg__DacValues dacMsg;
 
+
+
+#elif ROS
+wheelchair_sensor_msgs__msg__RefSpeed refSpeedMsg;
+
 // BATTERY: battery publisher and timer
 rcl_publisher_t batteryPublisher;
 rcl_timer_t batteryTimer;
 wheelchair_sensor_msgs__msg__Battery batteryMsg;
-
-#elif ROS
-wheelchair_sensor_msgs__msg__RefSpeed refSpeedMsg;
 #endif
 
 rclc_support_t support;
@@ -54,14 +57,6 @@ void error_loop() {
     }
 }
 
-#ifdef ROS_DEBUG
-void timer_callback(rcl_timer_t * inputTimer, int64_t last_call_time) {
-    RCLC_UNUSED(last_call_time);
-    if (inputTimer != NULL) {
-        RCSOFTCHECK(rcl_publish(&dacPublisher, &dacMsg, NULL));
-    }
-}
-
 // BATTERY: callback to publish battery status
 void battery_timer_callback(rcl_timer_t *input_timer, int64_t last_call_time) {
     RCLC_UNUSED(last_call_time);
@@ -72,6 +67,16 @@ void battery_timer_callback(rcl_timer_t *input_timer, int64_t last_call_time) {
         RCSOFTCHECK(rcl_publish(&batteryPublisher, &batteryMsg, NULL));
     }
 }
+
+#ifdef ROS_DEBUG
+void timer_callback(rcl_timer_t * inputTimer, int64_t last_call_time) {
+    RCLC_UNUSED(last_call_time);
+    if (inputTimer != NULL) {
+        RCSOFTCHECK(rcl_publish(&dacPublisher, &dacMsg, NULL));
+    }
+}
+
+
 
 void transmitDac(int16_t leftDacValue, int16_t rightDacValue) {
     dacMsg.left_dac = leftDacValue;
@@ -105,18 +110,6 @@ void microRosSetup(unsigned int timer_timeout, const char* nodeName, const char*
         &node,
         ROSIDL_GET_MSG_TYPE_SUPPORT(wheelchair_sensor_msgs, msg, RefSpeed),
         subTopicName));
-#elif ROS_DEBUG
-    RCCHECK(rclc_subscription_init_best_effort(
-        &subscriber,
-        &node,
-        ROSIDL_GET_MSG_TYPE_SUPPORT(wheelchair_sensor_msgs, msg, RefSpeed),
-        subTopicName));
-
-    RCCHECK(rclc_publisher_init_best_effort(
-        &dacPublisher,
-        &node,
-        ROSIDL_GET_MSG_TYPE_SUPPORT(wheelchair_sensor_msgs, msg, DacValues),
-        "dac_value"));
 
     // BATTERY: init publisher and timer
     RCCHECK(rclc_publisher_init_default(
@@ -130,6 +123,20 @@ void microRosSetup(unsigned int timer_timeout, const char* nodeName, const char*
         &support,
         RCL_MS_TO_NS(3000),
         battery_timer_callback));
+#elif ROS_DEBUG
+    RCCHECK(rclc_subscription_init_best_effort(
+        &subscriber,
+        &node,
+        ROSIDL_GET_MSG_TYPE_SUPPORT(wheelchair_sensor_msgs, msg, RefSpeed),
+        subTopicName));
+
+    RCCHECK(rclc_publisher_init_best_effort(
+        &dacPublisher,
+        &node,
+        ROSIDL_GET_MSG_TYPE_SUPPORT(wheelchair_sensor_msgs, msg, DacValues),
+        "dac_value"));
+
+
 #endif
 
 #ifdef ROS_DEBUG
@@ -143,13 +150,23 @@ void microRosSetup(unsigned int timer_timeout, const char* nodeName, const char*
     RCCHECK(rclc_executor_init(&executor, &support.context, 3, &allocator));
     RCCHECK(rclc_executor_add_subscription(&executor, &subscriber, &refSpeedMsg, &subscription_callback, ON_NEW_DATA));
 
+    RCCHECK(rclc_timer_init_default(
+        &timer,
+        &support,
+        RCL_MS_TO_NS(timer_timeout),
+        battery_timer_callback));
 #ifdef ROS_DEBUG
     RCCHECK(rclc_executor_add_timer(&executor, &timer));
+#endif
     RCCHECK(rclc_executor_add_timer(&executor, &batteryTimer)); // BATTERY: add battery timer to executor
+
+
+
+#ifdef ROS_DEBUG
 
     dacMsg.left_dac = 0;
     dacMsg.right_dac = 0;
-    initBatterySensor();  // BATTERY: initialize ADC hardware
+
 #endif
 }
 
