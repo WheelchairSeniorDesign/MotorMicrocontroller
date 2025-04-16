@@ -188,10 +188,12 @@ void loop() {
     refSpeedR=static_cast<int16_t>(tempRefSpeedR);
     refSpeedL=static_cast<int16_t>(tempRefSpeedL);
 
+#if defined(ROS) || defined(ROS_DEBUG)
     // Adding the ebrake. The brake variable is flipped, so false = brake on
     if(eBrake){
         brake = false;
     }
+#endif
 
     digitalWrite(directionLPin,directionL);
     digitalWrite(directionRPin,directionR);
