@@ -8,6 +8,7 @@ It will also read the speed of the motor and send it to the onboard computer.
 #include <Arduino.h>
 #include <Adafruit_MCP4725.h>
 #include "RefSpeed.h"
+#include "BatteryFunctions.h"
 
 #if defined(ROS) || defined(ROS_DEBUG)
 
@@ -26,6 +27,8 @@ int directionRPin = 13;
 int enablePin = 11;
 int speedPin = 4;
 int motorSpeedPin = 22;
+int batteryPin = 28;
+
 
 
 //variables to be used in the code
@@ -36,6 +39,7 @@ bool enable; // enable for motor controller
 int motorSpeed; // value read from the motor speed sensor
 int16_t refSpeedR; // value sent to the motor controller for speed of right motor
 int16_t refSpeedL; // value sent to the motor controller for speed of left motor
+int16_t batteryValue;
 refSpeed refSpeedSensors;
 
 // //variables to handle frequecy reading and tranfer to speed
@@ -53,7 +57,8 @@ refSpeed refSpeedSensors;
 
 void setup() {
     Serial.begin(115200); // start I2C communication protocol
-
+    //initiate ADC for battery level reading testing
+    initBatterySensor();  // BATTERY: initialize ADC hardware
   // initiate the DACs
     while (!dacA.begin(0x62)) {
         Serial.println("DAC A not found");
@@ -65,6 +70,7 @@ void setup() {
     }
     //pinMode(dacClockPin,OUTPUT); // set the pins to be used as output
     //pinMode(speedPin,OUTPUT);
+    pinMode(batteryPin,INPUT);
     pinMode(directionLPin,OUTPUT);
     pinMode(directionRPin,OUTPUT);
     pinMode(brakePin,OUTPUT);
@@ -102,7 +108,7 @@ void setup() {
 // }
 
 
-//converssion of frequency to MPH
+//conversion of frequency to MPH
 // void freqToSpeed(){
 //   speedR = (freqR*10/21.33)*3.14*12.5*60/63360;
 //   speedL = (freqL*10/21.33)*3.14*12.5*60/63360;
