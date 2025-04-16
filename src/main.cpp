@@ -28,7 +28,7 @@ int speedPin = 4;
 int motorSpeedPin = 22;
 
 //4095 is max
-float motorMaxSpeed = 500;
+float motorMaxSpeed = 2000;
 
 
 //variables to be used in the code
@@ -159,7 +159,8 @@ void loop() {
 
     enable = false; // enable the motor controller
     if (refSpeedSensors.rightSpeed == 0 && refSpeedSensors.leftSpeed == 0) {
-        brake = false; //brake if speeds are 0
+        //brake = false; //brake if speeds are 0
+        enable = true;
     }
     else {
         brake = true; //disable brake if speeds are not 0
