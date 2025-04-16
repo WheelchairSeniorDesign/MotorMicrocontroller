@@ -27,6 +27,9 @@ int enablePin = 11;
 int speedPin = 4;
 int motorSpeedPin = 22;
 
+//4095 is max
+float motorMaxSpeed = 500;
+
 
 //variables to be used in the code
 bool brake; // brake for motor controller
@@ -156,10 +159,10 @@ void loop() {
 
     enable = false; // enable the motor controller
     if (refSpeedSensors.rightSpeed == 0 && refSpeedSensors.leftSpeed == 0) {
-        brake = false;
+        brake = false; //brake if speeds are 0
     }
     else {
-        brake = true;
+        brake = true; //disable brake if speeds are not 0
     }
     //add break if emergency button is pushed
 
@@ -177,13 +180,18 @@ void loop() {
         directionL = true;
     }
 
-    //4095 is max, changed for testing
-    float tempRefSpeedR = abs(refSpeedSensors.rightSpeed) * 1000 / 100;
-    float tempRefSpeedL = abs(refSpeedSensors.leftSpeed) * 1000 / 100;
+
+    float tempRefSpeedR = abs(refSpeedSensors.rightSpeed) * motorMaxSpeed / 100;
+    float tempRefSpeedL = abs(refSpeedSensors.leftSpeed) * motorMaxSpeed / 100;
 
 
     refSpeedR=static_cast<int16_t>(tempRefSpeedR);
     refSpeedL=static_cast<int16_t>(tempRefSpeedL);
+
+    // Adding the ebrake. The brake variable is flipped, so false = brake on
+    if(eBrake){
+        brake = false;
+    }
 
     digitalWrite(directionLPin,directionL);
     digitalWrite(directionRPin,directionR);
