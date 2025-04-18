@@ -28,7 +28,7 @@ int speedPin = 4;
 int motorSpeedPin = 22;
 
 //4095 is max
-float motorMaxSpeed = 2000;
+float motorMaxSpeed = 1000;
 
 
 //variables to be used in the code
@@ -56,6 +56,12 @@ refSpeed refSpeedSensors;
 
 void setup() {
     Serial.begin(115200); // start I2C communication protocol
+
+    while(!Serial){
+        delay(10); //wait for serial
+    }
+
+    delay(2000);
 
   // initiate the DACs
     while (!dacA.begin(0x62)) {
