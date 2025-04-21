@@ -16,13 +16,12 @@
 
 bool eBrake = false;
 
-//Used to subscribe to raw joystick data or processed reference speed
 
 // ROS messages
 #ifdef ROS_DEBUG
 #include <wheelchair_sensor_msgs/msg/dac_values.h>
 #include <wheelchair_sensor_msgs/msg/sensors.h>
-#include <wheelchair_sensor_msgs/msg/battery.h> // BATTERY
+
 
 #elif ROS
 
@@ -37,23 +36,16 @@ wheelchair_sensor_msgs__msg__RefSpeed refSpeedMsg;
 
 rcl_subscription_t brake_subscriber;
 wheelchair_sensor_msgs__msg__Brake brakeMsg;
+
+// BATTERY: battery publisher and timer
+rcl_publisher_t batteryPublisher;
+rcl_timer_t batteryTimer;
+wheelchair_sensor_msgs__msg__Battery batteryMsg;
+
 #ifdef ROS_DEBUG
 rcl_publisher_t dacPublisher;
 wheelchair_sensor_msgs__msg__DacValues dacMsg;
 
-// BATTERY: battery publisher and timer
-rcl_publisher_t batteryPublisher;
-rcl_timer_t batteryTimer;
-wheelchair_sensor_msgs__msg__Battery batteryMsg;
-
-#elif ROS
-
-wheelchair_sensor_msgs__msg__RefSpeed refSpeedMsg;
-
-// BATTERY: battery publisher and timer
-rcl_publisher_t batteryPublisher;
-rcl_timer_t batteryTimer;
-wheelchair_sensor_msgs__msg__Battery batteryMsg;
 
 #endif
 
