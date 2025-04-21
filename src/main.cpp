@@ -206,8 +206,8 @@ void loop() {
     digitalWrite(directionRPin,directionR);
     digitalWrite(enablePin, enable);
     digitalWrite(brakePin, brake);
-    dacA.setVoltage(refSpeedR, false);
-    dacB.setVoltage(refSpeedL, false);
+    dacB.setVoltage(refSpeedR, false);
+    dacA.setVoltage(refSpeedL, false);
     //getFreq();
     //freqToSpeed();
 }
