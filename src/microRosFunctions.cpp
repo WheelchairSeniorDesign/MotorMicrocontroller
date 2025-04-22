@@ -4,22 +4,27 @@
 #include "microRosFunctions.h"
 #include "BatteryFunctions.h"  // BATTERY: include battery reading functions
 #include <micro_ros_platformio.h>
+#include <wheelchair_sensor_msgs/msg/ref_speed.h>
+#include <wheelchair_sensor_msgs/msg/brake.h>
+#include <wheelchair_sensor_msgs/msg/battery.h> // BATTERY
 
 #include <rcl/rcl.h>
 #include <rcl/error_handling.h>
 #include <rclc/rclc.h>
 #include <rclc/executor.h>
 
+
+bool eBrake = false;
+
+
 // ROS messages
 #ifdef ROS_DEBUG
-#include <wheelchair_sensor_msgs/msg/ref_speed.h>
 #include <wheelchair_sensor_msgs/msg/dac_values.h>
 #include <wheelchair_sensor_msgs/msg/sensors.h>
-#include <wheelchair_sensor_msgs/msg/battery.h> // BATTERY
+
 
 #elif ROS
-#include <wheelchair_sensor_msgs/msg/ref_speed.h>
-#include <wheelchair_sensor_msgs/msg/battery.h> // BATTERY
+
 #endif
 
 // Executor
@@ -27,23 +32,21 @@ rclc_executor_t executor;
 
 // Subscriber
 rcl_subscription_t subscriber;
+wheelchair_sensor_msgs__msg__RefSpeed refSpeedMsg;
+
+rcl_subscription_t brake_subscriber;
+wheelchair_sensor_msgs__msg__Brake brakeMsg;
+
+// BATTERY: battery publisher and timer
+rcl_publisher_t batteryPublisher;
+rcl_timer_t batteryTimer;
+wheelchair_sensor_msgs__msg__Battery batteryMsg;
+
 #ifdef ROS_DEBUG
-wheelchair_sensor_msgs__msg__Sensors refSpeedMsg;
 rcl_publisher_t dacPublisher;
 wheelchair_sensor_msgs__msg__DacValues dacMsg;
 
-// BATTERY: battery publisher and timer
-rcl_publisher_t batteryPublisher;
-rcl_timer_t batteryTimer;
-wheelchair_sensor_msgs__msg__Battery batteryMsg;
 
-#elif ROS
-wheelchair_sensor_msgs__msg__RefSpeed refSpeedMsg;
-
-// BATTERY: battery publisher and timer
-rcl_publisher_t batteryPublisher;
-rcl_timer_t batteryTimer;
-wheelchair_sensor_msgs__msg__Battery batteryMsg;
 #endif
 
 rclc_support_t support;
@@ -89,17 +92,40 @@ void transmitDac(int16_t leftDacValue, int16_t rightDacValue) {
 }
 #endif
 
-void subscription_callback(const void *msgin) {
-#ifdef ROS_DEBUG
-    const wheelchair_sensor_msgs__msg__Sensors *msg = (const wheelchair_sensor_msgs__msg__Sensors *)msgin;
-    refSpeedMsg = *msg;
-#elif ROS
+
+void subscription_callback(const void *msgin)
+{
     const wheelchair_sensor_msgs__msg__RefSpeed *msg = (const wheelchair_sensor_msgs__msg__RefSpeed *)msgin;
     refSpeedMsg = *msg;
+#ifdef ROS_DEBUG
+
+    //Try using Serial1 to use a Uart adapter to print this out
+//    Serial1.print("Left Speed: ");
+//    Serial1.println(msg->left_speed);
+//    Serial1.print("Right Speed: ");
+//    Serial1.println(msg->right_speed);
+
+
+    // if (msg->left_speed == 100 || msg->right_speed == 100) {
+    //     digitalWrite(LED_BUILTIN, HIGH);
+    // } else {
+    //     digitalWrite(LED_BUILTIN, LOW);
+    // }
+
+#elif ROS
+
 #endif
 }
 
-void microRosSetup(unsigned int timer_timeout, const char* nodeName, const char* subTopicName, const char* pubTopicName) {
+
+void brake_subscription_callback(const void *msgin)
+{
+    const wheelchair_sensor_msgs__msg__Brake *msg = (const wheelchair_sensor_msgs__msg__Brake *)msgin;
+    eBrake = msg->brake;
+}
+
+void microRosSetup(unsigned int timer_timeout, const char* nodeName, const char* subTopicName, const char* pubTopicName){
+
     set_microros_serial_transports(Serial);
     delay(2000);
     allocator = rcl_get_default_allocator();
@@ -108,14 +134,29 @@ void microRosSetup(unsigned int timer_timeout, const char* nodeName, const char*
     RCCHECK(rclc_support_init(&support, 0, NULL, &allocator));
     RCCHECK(rclc_node_init_default(&node, nodeName, "", &support));
 
-#ifdef ROS
-    RCCHECK(rclc_subscription_init_best_effort(
-        &subscriber,
-        &node,
-        ROSIDL_GET_MSG_TYPE_SUPPORT(wheelchair_sensor_msgs, msg, RefSpeed),
-        subTopicName));
 
-    // BATTERY: init publisher and timer
+//    // create publisher
+//    RCCHECK(rclc_publisher_init_default(
+//            &publisher,
+//            &node,
+//            ROSIDL_GET_MSG_TYPE_SUPPORT(wheelchair_sensor_msgs, sensorMsg, Sensors),
+//            pubTopicName));
+
+    // Create Ref Speed Subscriber
+    RCCHECK(rclc_subscription_init_best_effort(
+            &subscriber,
+            &node,
+            ROSIDL_GET_MSG_TYPE_SUPPORT(wheelchair_sensor_msgs, msg, RefSpeed),
+            subTopicName));
+
+    // Create Brake Subscriber
+    RCCHECK(rclc_subscription_init_best_effort(
+            &brake_subscriber,
+            &node,
+            ROSIDL_GET_MSG_TYPE_SUPPORT(wheelchair_sensor_msgs, msg, Brake),
+            "ebrake"));
+  
+  // BATTERY: init publisher and timer
     RCCHECK(rclc_publisher_init_default(
         &batteryPublisher,
         &node,
@@ -127,12 +168,13 @@ void microRosSetup(unsigned int timer_timeout, const char* nodeName, const char*
         &support,
         RCL_MS_TO_NS(3000),
         battery_timer_callback));
+
+
+#ifdef ROS
+   
+
+    
 #elif ROS_DEBUG
-    RCCHECK(rclc_subscription_init_best_effort(
-        &subscriber,
-        &node,
-        ROSIDL_GET_MSG_TYPE_SUPPORT(wheelchair_sensor_msgs, msg, RefSpeed),
-        subTopicName));
 
     RCCHECK(rclc_publisher_init_best_effort(
         &dacPublisher,
@@ -151,14 +193,25 @@ void microRosSetup(unsigned int timer_timeout, const char* nodeName, const char*
         timer_callback));
 #endif
 
-    RCCHECK(rclc_executor_init(&executor, &support.context, 3, &allocator));
+
+    //create executor
+    //Number of handles = # timers + # subscriptions + # clients + # services
+    RCCHECK(rclc_executor_init(&executor, &support.context, 4, &allocator));
+
+    // add sub to executor
     RCCHECK(rclc_executor_add_subscription(&executor, &subscriber, &refSpeedMsg, &subscription_callback, ON_NEW_DATA));
+
+    // Add brake sub to executor
+    RCCHECK(rclc_executor_add_subscription(&executor, &brake_subscriber, &brakeMsg, &brake_subscription_callback, ON_NEW_DATA));
+
+
 
     RCCHECK(rclc_timer_init_default(
         &timer,
         &support,
         RCL_MS_TO_NS(timer_timeout),
         battery_timer_callback));
+
 #ifdef ROS_DEBUG
     RCCHECK(rclc_executor_add_timer(&executor, &timer));
 #endif

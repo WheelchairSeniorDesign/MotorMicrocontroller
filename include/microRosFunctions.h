@@ -8,6 +8,8 @@
 #include <Arduino.h>
 #include "RefSpeed.h"
 
+extern bool eBrake;
+
 /**
  * Function to setup the microROS node.
  * @param timer_timeout The timeout for the timer.
