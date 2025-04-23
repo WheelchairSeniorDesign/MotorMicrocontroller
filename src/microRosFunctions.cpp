@@ -196,7 +196,7 @@ void microRosSetup(unsigned int timer_timeout, const char* nodeName, const char*
 
     //create executor
     //Number of handles = # timers + # subscriptions + # clients + # services
-    RCCHECK(rclc_executor_init(&executor, &support.context, 4, &allocator));
+    RCCHECK(rclc_executor_init(&executor, &support.context, 5, &allocator));
 
     // add sub to executor
     RCCHECK(rclc_executor_add_subscription(&executor, &subscriber, &refSpeedMsg, &subscription_callback, ON_NEW_DATA));
@@ -204,27 +204,23 @@ void microRosSetup(unsigned int timer_timeout, const char* nodeName, const char*
     // Add brake sub to executor
     RCCHECK(rclc_executor_add_subscription(&executor, &brake_subscriber, &brakeMsg, &brake_subscription_callback, ON_NEW_DATA));
 
+    RCCHECK(rclc_executor_add_timer(&executor, &batteryTimer)); // BATTERY: add battery timer to executor
 
+#ifdef ROS_DEBUG
 
     RCCHECK(rclc_timer_init_default(
         &timer,
         &support,
         RCL_MS_TO_NS(timer_timeout),
-        battery_timer_callback));
+        timer_callback));
 
-#ifdef ROS_DEBUG
     RCCHECK(rclc_executor_add_timer(&executor, &timer));
-#endif
-    RCCHECK(rclc_executor_add_timer(&executor, &batteryTimer)); // BATTERY: add battery timer to executor
-
-
-
-#ifdef ROS_DEBUG
 
     dacMsg.left_dac = 0;
     dacMsg.right_dac = 0;
-
 #endif
+
+
 }
 
 void checkSubs() {

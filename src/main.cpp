@@ -133,9 +133,7 @@ void loop() {
     checkSubs();
     refSpeedSensors = getRefSpeed();
 
-#ifdef ROS_DEBUG
-    transmitDac(refSpeedL, refSpeedR);
-#endif
+
 #endif
 
     //enable = true; // enable the motor controller
@@ -220,4 +218,8 @@ void loop() {
     dacA.setVoltage(refSpeedL, false);
     //getFreq();
     //freqToSpeed();
+
+#ifdef ROS_DEBUG
+    transmitDac(refSpeedL, refSpeedR);
+#endif
 }
