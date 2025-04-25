@@ -7,12 +7,11 @@ It will also read the speed of the motor and send it to the onboard computer.
 
 #include <Arduino.h>
 #include <Adafruit_MCP4725.h>
-#include <micro_ros_platformio.h>
 #include "RefSpeed.h"
 #include "BatteryFunctions.h"
 
 #if defined(ROS) || defined(ROS_DEBUG)
-
+#include <micro_ros_platformio.h>
 #include "microRosFunctions.h"
 
 #endif
@@ -71,7 +70,7 @@ void setup() {
 
 #if defined(ROS) || defined(ROS_DEBUG)
     set_microros_serial_transports(Serial);
-    microRosTick();
+    delay(2000);
 #endif
 
     //initiate ADC for battery level reading testing
