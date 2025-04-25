@@ -79,6 +79,9 @@ void timer_callback(rcl_timer_t * inputTimer, int64_t last_call_time) {
     }
 }
 
+
+#endif
+
 void battery_timer_callback(rcl_timer_t *input_timer, int64_t last_call_time) {
     RCLC_UNUSED(last_call_time);
     if (input_timer != NULL) {
@@ -88,7 +91,6 @@ void battery_timer_callback(rcl_timer_t *input_timer, int64_t last_call_time) {
         RCSOFTCHECK(rcl_publish(&batteryPublisher, &batteryMsg, NULL));
     }
 }
-#endif
 
 //  Directly publish refSpeed in mph no conversio needed
 void motor_timer_callback(rcl_timer_t *input_timer, int64_t last_call_time) {
