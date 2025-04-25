@@ -10,14 +10,12 @@
 
 extern bool eBrake;
 
-/**
- * Function to setup the microROS node.
- * @param timer_timeout The timeout for the timer.
- * @param nodeName The name of the node.
- * @param subTopicName The name of the topic to subscribe to.
- * @param pubTopicName The name of the topic to publish to.
- */
-void microRosSetup(unsigned int timer_timeout, const char* nodeName, const char* subTopicName, const char* pubTopicName);
+
+bool create_entities();
+
+void destroy_entities();
+
+void microRosTick();
 
 /**
  * Transmits the message over ROS. Not in use right now
