@@ -30,6 +30,9 @@ int motorSpeedPin = 22;
 int batteryPin = 28;
 
 
+//4095 is max
+float motorMaxSpeed = 1000;
+
 
 //variables to be used in the code
 bool brake; // brake for motor controller
@@ -57,8 +60,18 @@ refSpeed refSpeedSensors;
 
 void setup() {
     Serial.begin(115200); // start I2C communication protocol
+
+
+    while(!Serial){
+        delay(10); //wait for serial
+    }
+
+    delay(2000);
+
+
     //initiate ADC for battery level reading testing
     initBatterySensor();  // BATTERY: initialize ADC hardware
+
   // initiate the DACs
     while (!dacA.begin(0x62)) {
         Serial.println("DAC A not found");
@@ -120,9 +133,7 @@ void loop() {
     checkSubs();
     refSpeedSensors = getRefSpeed();
 
-#ifdef ROS_DEBUG
-    transmitDac(refSpeedL, refSpeedR);
-#endif
+
 #endif
 
     //enable = true; // enable the motor controller
@@ -162,10 +173,11 @@ void loop() {
 
     enable = false; // enable the motor controller
     if (refSpeedSensors.rightSpeed == 0 && refSpeedSensors.leftSpeed == 0) {
-        brake = false;
+        //brake = false; //brake if speeds are 0
+        enable = true;
     }
     else {
-        brake = true;
+        brake = true; //disable brake if speeds are not 0
     }
     //add break if emergency button is pushed
 
@@ -183,20 +195,31 @@ void loop() {
         directionL = true;
     }
 
-    //4095 is max, changed for testing
-    float tempRefSpeedR = abs(refSpeedSensors.rightSpeed) * 1000 / 100;
-    float tempRefSpeedL = abs(refSpeedSensors.leftSpeed) * 1000 / 100;
+
+    float tempRefSpeedR = abs(refSpeedSensors.rightSpeed) * motorMaxSpeed / 100;
+    float tempRefSpeedL = abs(refSpeedSensors.leftSpeed) * motorMaxSpeed / 100;
 
 
     refSpeedR=static_cast<int16_t>(tempRefSpeedR);
     refSpeedL=static_cast<int16_t>(tempRefSpeedL);
 
+#if defined(ROS) || defined(ROS_DEBUG)
+    // Adding the ebrake. The brake variable is flipped, so false = brake on
+    if(eBrake){
+        brake = false;
+    }
+#endif
+
     digitalWrite(directionLPin,directionL);
     digitalWrite(directionRPin,directionR);
     digitalWrite(enablePin, enable);
     digitalWrite(brakePin, brake);
-    dacA.setVoltage(refSpeedR, false);
-    dacB.setVoltage(refSpeedL, false);
+    dacB.setVoltage(refSpeedR, false);
+    dacA.setVoltage(refSpeedL, false);
     //getFreq();
     //freqToSpeed();
+
+#ifdef ROS_DEBUG
+    transmitDac(refSpeedL, refSpeedR);
+#endif
 }
