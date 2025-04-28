@@ -133,7 +133,6 @@ void loop() {
 
 #if defined(ROS) || defined(ROS_DEBUG)
     microRosTick();
-    checkSubs();
     refSpeedSensors = getRefSpeed();
 
 

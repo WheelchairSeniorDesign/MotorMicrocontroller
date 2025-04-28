@@ -202,7 +202,7 @@ bool create_entities(){
 
     //Number of handles = # timers + # subscriptions + # clients + # services
     executor = rclc_executor_get_zero_initialized_executor();
-    RCCHECK(rclc_executor_init(&executor, &support.context, 4, &allocator));
+    RCCHECK(rclc_executor_init(&executor, &support.context, 5, &allocator));
 
     // add sub to executor
     RCCHECK(rclc_executor_add_subscription(&executor, &subscriber, &refSpeedMsg, &subscription_callback, ON_NEW_DATA));
@@ -265,10 +265,6 @@ void microRosTick(){
     }
 }
 
-
-void checkSubs() {
-    RCCHECK(rclc_executor_spin_some(&executor, RCL_MS_TO_NS(1)));
-}
 
 refSpeed getRefSpeed() {
     refSpeed refSpeed;

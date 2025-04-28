@@ -23,10 +23,6 @@ void microRosTick();
  */
 //void transmitMsg();
 
-/**
- * Function to check the subscriptions.
- */
-void checkSubs();
 
 /**
  * Function to get the reference speed from the ROS topic.
