@@ -11,7 +11,7 @@ It will also read the speed of the motor and send it to the onboard computer.
 #include "BatteryFunctions.h"
 
 #if defined(ROS) || defined(ROS_DEBUG)
-
+#include <micro_ros_platformio.h>
 #include "microRosFunctions.h"
 
 #endif
@@ -68,6 +68,10 @@ void setup() {
 
     delay(2000);
 
+#if defined(ROS) || defined(ROS_DEBUG)
+    set_microros_serial_transports(Serial);
+    delay(2000);
+#endif
 
     //initiate ADC for battery level reading testing
     initBatterySensor();  // BATTERY: initialize ADC hardware
@@ -102,9 +106,7 @@ void setup() {
 
 
 
-#if defined(ROS) || defined(ROS_DEBUG)
-   microRosSetup(1, "motor_node", "ref_speed", "test");
-#endif
+
 }
 
 // void getFreq() {
@@ -130,7 +132,7 @@ void setup() {
 void loop() {
 
 #if defined(ROS) || defined(ROS_DEBUG)
-    checkSubs();
+    microRosTick();
     refSpeedSensors = getRefSpeed();
 
 
