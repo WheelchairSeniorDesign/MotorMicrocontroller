@@ -210,6 +210,7 @@ void loop() {
     if(eBrake){
         brake = false;
     }
+    transmitDac(refSpeedL, refSpeedR);
 #endif
 
     digitalWrite(directionLPin,directionL);
