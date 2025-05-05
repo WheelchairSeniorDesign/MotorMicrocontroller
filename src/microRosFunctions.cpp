@@ -1,70 +1,63 @@
-#if defined(ROS) || defined(ROS_DEBUG)
 #include "microRosFunctions.h"
 #include "BatteryFunctions.h"
 #include <micro_ros_platformio.h>
-
 #include <rcl/rcl.h>
 #include <rcl/error_handling.h>
 #include <rclc/rclc.h>
 #include <rclc/executor.h>
 
-// ROS messages
+// Include ROS message types
 #ifdef ROS_DEBUG
 #include <wheelchair_sensor_msgs/msg/ref_speed.h>
 #include <wheelchair_sensor_msgs/msg/dac_values.h>
 #include <wheelchair_sensor_msgs/msg/sensors.h>
 #include <wheelchair_sensor_msgs/msg/battery.h>
-#include <wheelchair_sensor_msgs/msg/motors.h>  // Added: for sending wheel speed in MPH
+#include <wheelchair_sensor_msgs/msg/motors.h>
 #elif ROS
 #include <wheelchair_sensor_msgs/msg/ref_speed.h>
-#include <wheelchair_sensor_msgs/msg/motors.h>  // Added: for sending wheel speed in MPH
+#include <wheelchair_sensor_msgs/msg/motors.h>
 #endif
 
-// Executor
-rclc_executor_t executor;
+// External variables for actual speed
+extern float speedL;
+extern float speedR;
 
-// Subscriber
+// ROS variables
+rclc_executor_t executor;
+rclc_support_t support;
+rcl_allocator_t allocator;
+rcl_node_t node;
+
 rcl_subscription_t subscriber;
 #ifdef ROS_DEBUG
 wheelchair_sensor_msgs__msg__Sensors refSpeedMsg;
 rcl_publisher_t dacPublisher;
 wheelchair_sensor_msgs__msg__DacValues dacMsg;
 
-// BATTERY
 rcl_publisher_t batteryPublisher;
 rcl_timer_t batteryTimer;
 wheelchair_sensor_msgs__msg__Battery batteryMsg;
-
-// MOTOR MPH
-rcl_publisher_t motorPublisher;
-rcl_timer_t motorTimer;
-wheelchair_sensor_msgs__msg__Motors motorMsg;
-
-#elif ROS
+#else
 wheelchair_sensor_msgs__msg__RefSpeed refSpeedMsg;
-
-// MOTOR MPH
-rcl_publisher_t motorPublisher;
-rcl_timer_t motorTimer;
-wheelchair_sensor_msgs__msg__Motors motorMsg;
 #endif
 
-rclc_support_t support;
-rcl_allocator_t allocator;
-rcl_node_t node;
+rcl_publisher_t motorPublisher;
+rcl_timer_t motorTimer;
+wheelchair_sensor_msgs__msg__Motors motorMsg;
+
 rcl_timer_t timer;
 
-#define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){error_loop();}}
-#define RCSOFTCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){} }
+#define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if ((temp_rc != RCL_RET_OK)) { error_loop(); }}
+#define RCSOFTCHECK(fn) { rcl_ret_t temp_rc = fn; if ((temp_rc != RCL_RET_OK)) {} }
 
 void error_loop() {
-    while(1) {
+    while (1) {
         delay(100);
     }
 }
 
 #ifdef ROS_DEBUG
-void timer_callback(rcl_timer_t * inputTimer, int64_t last_call_time) {
+void timer_callback(rcl_timer_t *inputTimer, int64_t last_call_time) {
     RCLC_UNUSED(last_call_time);
     if (inputTimer != NULL) {
         RCSOFTCHECK(rcl_publish(&dacPublisher, &dacMsg, NULL));
@@ -82,12 +75,11 @@ void battery_timer_callback(rcl_timer_t *input_timer, int64_t last_call_time) {
 }
 #endif
 
-//  Directly publish refSpeed in mph no conversio needed
 void motor_timer_callback(rcl_timer_t *input_timer, int64_t last_call_time) {
     RCLC_UNUSED(last_call_time);
     if (input_timer != NULL) {
-        motorMsg.left_mph = refSpeedMsg.left_speed;
-        motorMsg.right_mph = refSpeedMsg.right_speed;
+        motorMsg.left_mph = speedL;
+        motorMsg.right_mph = speedR;
         RCSOFTCHECK(rcl_publish(&motorPublisher, &motorMsg, NULL));
     }
 }
@@ -104,13 +96,13 @@ void subscription_callback(const void *msgin) {
 #ifdef ROS_DEBUG
     const wheelchair_sensor_msgs__msg__Sensors *msg = (const wheelchair_sensor_msgs__msg__Sensors *)msgin;
     refSpeedMsg = *msg;
-#elif ROS
+#else
     const wheelchair_sensor_msgs__msg__RefSpeed *msg = (const wheelchair_sensor_msgs__msg__RefSpeed *)msgin;
     refSpeedMsg = *msg;
 #endif
 }
 
-void microRosSetup(unsigned int timer_timeout, const char* nodeName, const char* subTopicName, const char* pubTopicName) {
+void microRosSetup(unsigned int timer_timeout, const char *nodeName, const char *subTopicName, const char *pubTopicName) {
     set_microros_serial_transports(Serial);
     delay(2000);
     allocator = rcl_get_default_allocator();
@@ -144,12 +136,11 @@ void microRosSetup(unsigned int timer_timeout, const char* nodeName, const char*
         battery_timer_callback));
 #endif
 
-    //  Init motor speed publisher and timer
     RCCHECK(rclc_publisher_init_default(
         &motorPublisher,
         &node,
         ROSIDL_GET_MSG_TYPE_SUPPORT(wheelchair_sensor_msgs, msg, Motors),
-        "motor_speed"));
+        pubTopicName));
 
     RCCHECK(rclc_timer_init_default(
         &motorTimer,
@@ -173,7 +164,6 @@ void microRosSetup(unsigned int timer_timeout, const char* nodeName, const char*
     RCCHECK(rclc_executor_add_timer(&executor, &batteryTimer));
 #endif
 
-    // Add motor timer to executor
     RCCHECK(rclc_executor_add_timer(&executor, &motorTimer));
 
 #ifdef ROS_DEBUG
@@ -197,6 +187,4 @@ refSpeed getRefSpeed() {
     refSpeed.rightSpeed = refSpeedMsg.right_speed;
     return refSpeed;
 }
-
-#endif
 

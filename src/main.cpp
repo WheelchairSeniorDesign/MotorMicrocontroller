@@ -11,16 +11,13 @@ It will also read the speed of the motor and send it to the onboard computer.
 #include "BatteryFunctions.h"
 
 #if defined(ROS) || defined(ROS_DEBUG)
-
 #include "microRosFunctions.h"
-
 #endif
 
 Adafruit_MCP4725 dacA;
 Adafruit_MCP4725 dacB;
-// For Adafruit MCP4725A1 the address is 0x62 (default) or 0x63 (ADDR pin tied to VCC)
 
-int dacClockPin = 5; //GPIO number for these variables
+int dacClockPin = 5;
 int brakePin = 10;
 int directionLPin = 12;
 int directionRPin = 13;
@@ -29,174 +26,108 @@ int speedPin = 4;
 int motorSpeedPin = 22;
 int batteryPin = 28;
 
+int speedFreqRPin;
+int speedFreqLPin;
 
-
-//variables to be used in the code
-bool brake; // brake for motor controller
-bool directionL; // direction for motor controller LEFT
-bool directionR; // direction for motor controller RIGHT
-bool enable; // enable for motor controller
-int motorSpeed; // value read from the motor speed sensor
-int16_t refSpeedR; // value sent to the motor controller for speed of right motor
-int16_t refSpeedL; // value sent to the motor controller for speed of left motor
+bool brake;
+bool directionL;
+bool directionR;
+bool enable;
+int motorSpeed;
+int16_t refSpeedR;
+int16_t refSpeedL;
 int16_t batteryValue;
 refSpeed refSpeedSensors;
 
-// //variables to handle frequecy reading and tranfer to speed
-// volatile uint32_t pulse_count_1 = 0;
-// volatile uint32_t pulse_count_2 = 0;
-//
-// void pulse_handler_1() { pulse_count_1++; }
-// void pulse_handler_2() { pulse_count_2++; }
-//
-// float freqR;
-// float freqL;
-// float speedR;
-// float speedL;
+// Global speed variables used in ROS publisher
+float speedR = 0;
+float speedL = 0;
 
+volatile uint32_t pulse_count_1 = 0;
+volatile uint32_t pulse_count_2 = 0;
+
+void pulse_handler_1() { pulse_count_1++; }
+void pulse_handler_2() { pulse_count_2++; }
 
 void setup() {
-    Serial.begin(115200); // start I2C communication protocol
-    //initiate ADC for battery level reading testing
-    initBatterySensor();  // BATTERY: initialize ADC hardware
-  // initiate the DACs
+    Serial.begin(115200);
+    initBatterySensor();
+
     while (!dacA.begin(0x62)) {
         Serial.println("DAC A not found");
         delay(500);
     }
     while (!dacB.begin(0x63)) {
-      Serial.println("DAC B not found");
-      delay(500);
+        Serial.println("DAC B not found");
+        delay(500);
     }
-    //pinMode(dacClockPin,OUTPUT); // set the pins to be used as output
-    //pinMode(speedPin,OUTPUT);
-    pinMode(batteryPin,INPUT);
-    pinMode(directionLPin,OUTPUT);
-    pinMode(directionRPin,OUTPUT);
-    pinMode(brakePin,OUTPUT);
-    //pinMode(refSpeedPin,INPUT); // set the pins to be used as input
-    pinMode(motorSpeedPin,INPUT);
+
+    pinMode(batteryPin, INPUT);
+    pinMode(directionLPin, OUTPUT);
+    pinMode(directionRPin, OUTPUT);
+    pinMode(brakePin, OUTPUT);
 
     brake = false;
     enable = true;
 
-    // pinMode(speedFreqRPin, INPUT_PULLDOWN);
-    // pinMode(speedFreqLPin, INPUT_PULLDOWN);
-    // attachInterrupt(digitalPinToInterrupt(speedFreqRPin), pulse_handler_1, RISING);
-    // attachInterrupt(digitalPinToInterrupt(speedFreqLPin), pulse_handler_2, RISING);
-
-
-
-
+    pinMode(speedFreqRPin, INPUT_PULLDOWN);
+    pinMode(speedFreqLPin, INPUT_PULLDOWN);
+    attachInterrupt(digitalPinToInterrupt(speedFreqRPin), pulse_handler_1, RISING);
+    attachInterrupt(digitalPinToInterrupt(speedFreqLPin), pulse_handler_2, RISING);
 
 #if defined(ROS) || defined(ROS_DEBUG)
-   microRosSetup(1, "motor_node", "ref_speed", "test");
+    microRosSetup(1, "motor_node", "ref_speed", "motor_speed");
 #endif
 }
 
-// void getFreq() {
-//   pulse_count_1 = 0;
-//   pulse_count_2 = 0;
-//   uint32_t start_time = millis();
-//
-//   delay(1000);  // Measure for 1 second
-//
-//   uint32_t elapsed_time = millis() - start_time;
-//   freqR = (pulse_count_1 * 1000.0) / elapsed_time;  // Hz
-//   freqL = (pulse_count_2 * 1000.0) / elapsed_time;  // Hz
-//
-// }
+void getFreq() {
+    pulse_count_1 = 0;
+    pulse_count_2 = 0;
+    uint32_t start_time = millis();
 
+    delay(1000);  // Measure for 1 second
 
-//conversion of frequency to MPH
-// void freqToSpeed(){
-//   speedR = (freqR*10/21.33)*3.14*12.5*60/63360;
-//   speedL = (freqL*10/21.33)*3.14*12.5*60/63360;
-// }
+    uint32_t elapsed_time = millis() - start_time;
+    speedR = (pulse_count_1 * 1000.0) / elapsed_time;
+    speedL = (pulse_count_2 * 1000.0) / elapsed_time;
+}
+
+void freqToSpeed() {
+    // Converts frequency to speed in MPH
+    speedR = (speedR * 10 / 21.33) * 3.14 * 12.5 * 60 / 63360;
+    speedL = (speedL * 10 / 21.33) * 3.14 * 12.5 * 60 / 63360;
+}
 
 void loop() {
-
 #if defined(ROS) || defined(ROS_DEBUG)
     checkSubs();
     refSpeedSensors = getRefSpeed();
-
 #ifdef ROS_DEBUG
     transmitDac(refSpeedL, refSpeedR);
 #endif
 #endif
 
-    //enable = true; // enable the motor controller
-    /*joystickSpeed{} = digitalRead(refSpeedPin); // read the reference speed from the onboard computer
-    speedR = joystickSpeed.speedR;
-    speedL = joystickSpeed.speedL;
-    */ 
-   // this part will be discussed with the sensors team
-    /*
-    directionR = true; // initially forward direction
-    directionL = true; // initially forward direction
-    brake = false; // initially no brake
-    if(speedR == 0 && speedL == 0){ // if the reference speed is 0, stop the motor
-      brake = true; // activate the brake if joystick outputs 0 in both directions
-    }
+    enable = false;
+    brake = (refSpeedSensors.rightSpeed != 0 || refSpeedSensors.leftSpeed != 0);
 
-    else{
-      brake = false; // deactivate the brake if joystick outputs a value other than 0
-      if(speedR<0){
-        directionR = false; // set the direction to right if the joystick outputs a negative value
-        refSpeedR = speedR*-1; // set the reference speed to the absolute value of the joystick output
-      }
-      else if(speedL<0){
-        directionL = false; // set the direction to left if the joystick outputs a positive value
-        refSpeedL = speedL*-1; // set the reference speed to the absolute value of the joystick output
-      }
-      else{
-        refSpeedR = speedR; // set the referrence speed to the joystick output
-        refSpeedL = speedL;
-      }
+    directionR = !(refSpeedSensors.rightSpeed > 0);
+    directionL = !(refSpeedSensors.leftSpeed > 0);
 
-      //refSpeedR = refSpeedR*4095/100; // adjust the reference speed Right to the motor controller
-      //refSpeedL = refSpeedL*4095/100; // adjust the reference speed Left to the motor controller
-
-    }
-    */
-
-    enable = false; // enable the motor controller
-    if (refSpeedSensors.rightSpeed == 0 && refSpeedSensors.leftSpeed == 0) {
-        brake = false;
-    }
-    else {
-        brake = true;
-    }
-    //add break if emergency button is pushed
-
-    if (refSpeedSensors.rightSpeed > 0) {
-        directionR = false;
-    }
-    else {
-        directionR = true;
-    }
-
-    if (refSpeedSensors.leftSpeed > 0) {
-        directionL = false;
-    }
-    else {
-        directionL = true;
-    }
-
-    //4095 is max, changed for testing
     float tempRefSpeedR = abs(refSpeedSensors.rightSpeed) * 1000 / 100;
     float tempRefSpeedL = abs(refSpeedSensors.leftSpeed) * 1000 / 100;
 
+    refSpeedR = static_cast<int16_t>(tempRefSpeedR);
+    refSpeedL = static_cast<int16_t>(tempRefSpeedL);
 
-    refSpeedR=static_cast<int16_t>(tempRefSpeedR);
-    refSpeedL=static_cast<int16_t>(tempRefSpeedL);
-
-    digitalWrite(directionLPin,directionL);
-    digitalWrite(directionRPin,directionR);
+    digitalWrite(directionLPin, directionL);
+    digitalWrite(directionRPin, directionR);
     digitalWrite(enablePin, enable);
     digitalWrite(brakePin, brake);
+
     dacA.setVoltage(refSpeedR, false);
     dacB.setVoltage(refSpeedL, false);
-    //getFreq();
-    //freqToSpeed();
+
+    getFreq();
+    freqToSpeed();
 }
+
