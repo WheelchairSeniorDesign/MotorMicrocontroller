@@ -58,6 +58,10 @@ float freqR;
 float freqL;
 float speedR;
 float speedL;
+unsigned long freqSampleStart = 0;
+const unsigned long freqSampleDuration = 1000; // in ms
+
+bool measuringFreq = false;
 
 
 void setup() {
@@ -112,15 +116,21 @@ void setup() {
 }
 
  void getFreq() {
-   pulse_count_1 = 0;
-   pulse_count_2 = 0;
-   uint32_t start_time = millis();
+    if (!measuringFreq) {
+        // Start measuring
+        pulse_count_1 = 0;
+        pulse_count_2 = 0;
+        freqSampleStart = millis();
+        measuringFreq = true;
+    }
 
-   delay(1000);  // Measure for 1 second
+    if (millis() - freqSampleStart >= freqSampleDuration) {
+        // Finish measuring
+        freqR = (pulse_count_1 * 1000.0) / freqSampleDuration;
+        freqL = (pulse_count_2 * 1000.0) / freqSampleDuration;
+        measuringFreq = false;
+    }
 
-   uint32_t elapsed_time = millis() - start_time;
-   freqR = (pulse_count_1 * 1000.0) / elapsed_time;  // Hz
-   freqL = (pulse_count_2 * 1000.0) / elapsed_time;  // Hz
 
  }
 
