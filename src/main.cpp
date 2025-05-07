@@ -9,6 +9,7 @@ It will also read the speed of the motor and send it to the onboard computer.
 #include <Adafruit_MCP4725.h>
 #include "RefSpeed.h"
 #include "BatteryFunctions.h"
+#include "pico/multicore.h"
 
 #if defined(ROS) || defined(ROS_DEBUG)
 #include <micro_ros_platformio.h>
@@ -45,7 +46,7 @@ int motorSpeed; // value read from the motor speed sensor
 int16_t refSpeedR; // value sent to the motor controller for speed of right motor
 int16_t refSpeedL; // value sent to the motor controller for speed of left motor
 int16_t batteryValue;
-refSpeed refSpeedSensors;
+volatile refSpeed* refSpeedSensors;
 
 // //variables to handle frequecy reading and tranfer to speed
 volatile uint32_t pulse_count_1 = 0;
@@ -59,6 +60,14 @@ float freqL;
 float speedR;
 float speedL;
 
+
+void core1Task() {
+
+
+    while (true) {
+
+    }
+}
 
 void setup() {
     Serial.begin(115200); // start I2C communication protocol
@@ -135,7 +144,7 @@ void loop() {
 
 #if defined(ROS) || defined(ROS_DEBUG)
     microRosTick();
-    refSpeedSensors = getRefSpeed();
+    getRefSpeed(refSpeedSensors);
 
 
 #endif
@@ -176,7 +185,7 @@ void loop() {
     */
 
     enable = false; // enable the motor controller
-    if (refSpeedSensors.rightSpeed == 0 && refSpeedSensors.leftSpeed == 0) {
+    if (refSpeedSensors->rightSpeed == 0 && refSpeedSensors->leftSpeed == 0) {
         //brake = false; //brake if speeds are 0
         enable = true;
     }
@@ -185,14 +194,14 @@ void loop() {
     }
     //add break if emergency button is pushed
 
-    if (refSpeedSensors.rightSpeed > 0) {
+    if (refSpeedSensors->rightSpeed > 0) {
         directionR = false;
     }
     else {
         directionR = true;
     }
 
-    if (refSpeedSensors.leftSpeed > 0) {
+    if (refSpeedSensors->leftSpeed > 0) {
         directionL = false;
     }
     else {
@@ -200,8 +209,8 @@ void loop() {
     }
 
 
-    float tempRefSpeedR = abs(refSpeedSensors.rightSpeed) * motorMaxSpeed / 100;
-    float tempRefSpeedL = abs(refSpeedSensors.leftSpeed) * motorMaxSpeed / 100;
+    float tempRefSpeedR = abs(refSpeedSensors->rightSpeed) * motorMaxSpeed / 100;
+    float tempRefSpeedL = abs(refSpeedSensors->leftSpeed) * motorMaxSpeed / 100;
 
 
     refSpeedR=static_cast<int16_t>(tempRefSpeedR);

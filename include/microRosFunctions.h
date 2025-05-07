@@ -28,7 +28,7 @@ void microRosTick();
  * Function to get the reference speed from the ROS topic.
  * @return The reference speed using the refSpeed struct.
  */
-refSpeed getRefSpeed();
+void getRefSpeed(volatile refSpeed* refSpeedPtr);
 
 
 void transmitDac(int16_t leftDacValue, int16_t rightDacValue);

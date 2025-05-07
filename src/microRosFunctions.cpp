@@ -275,11 +275,11 @@ void microRosTick(){
 }
 
 
-refSpeed getRefSpeed() {
-    refSpeed refSpeed;
-    refSpeed.leftSpeed = refSpeedMsg.left_speed;
-    refSpeed.rightSpeed = refSpeedMsg.right_speed;
-    return refSpeed;
+void getRefSpeed(volatile refSpeed* refSpeedPtr) {
+    if (refSpeedPtr != nullptr) {
+        refSpeedPtr->leftSpeed = refSpeedMsg.left_speed;
+        refSpeedPtr->rightSpeed = refSpeedMsg.right_speed;
+    }
 }
 
 #endif
