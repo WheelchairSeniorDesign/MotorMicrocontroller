@@ -28,6 +28,8 @@ int enablePin = 11;
 int speedPin = 4;
 int motorSpeedPin = 22;
 int batteryPin = 28;
+int speedFreqRPin = 15;
+int speedFreqLPin = 14;
 
 
 //4095 is max
@@ -46,16 +48,16 @@ int16_t batteryValue;
 refSpeed refSpeedSensors;
 
 // //variables to handle frequecy reading and tranfer to speed
-// volatile uint32_t pulse_count_1 = 0;
-// volatile uint32_t pulse_count_2 = 0;
-//
-// void pulse_handler_1() { pulse_count_1++; }
-// void pulse_handler_2() { pulse_count_2++; }
-//
-// float freqR;
-// float freqL;
-// float speedR;
-// float speedL;
+volatile uint32_t pulse_count_1 = 0;
+volatile uint32_t pulse_count_2 = 0;
+
+void pulse_handler_1() { pulse_count_1++; }
+void pulse_handler_2() { pulse_count_2++; }
+
+float freqR;
+float freqL;
+float speedR;
+float speedL;
 
 
 void setup() {
@@ -97,10 +99,10 @@ void setup() {
     brake = false;
     enable = true;
 
-    // pinMode(speedFreqRPin, INPUT_PULLDOWN);
-    // pinMode(speedFreqLPin, INPUT_PULLDOWN);
-    // attachInterrupt(digitalPinToInterrupt(speedFreqRPin), pulse_handler_1, RISING);
-    // attachInterrupt(digitalPinToInterrupt(speedFreqLPin), pulse_handler_2, RISING);
+    pinMode(speedFreqRPin, INPUT_PULLDOWN);
+    pinMode(speedFreqLPin, INPUT_PULLDOWN);
+    attachInterrupt(digitalPinToInterrupt(speedFreqRPin), pulse_handler_1, RISING);
+    attachInterrupt(digitalPinToInterrupt(speedFreqLPin), pulse_handler_2, RISING);
 
 
 
@@ -109,25 +111,25 @@ void setup() {
 
 }
 
-// void getFreq() {
-//   pulse_count_1 = 0;
-//   pulse_count_2 = 0;
-//   uint32_t start_time = millis();
-//
-//   delay(1000);  // Measure for 1 second
-//
-//   uint32_t elapsed_time = millis() - start_time;
-//   freqR = (pulse_count_1 * 1000.0) / elapsed_time;  // Hz
-//   freqL = (pulse_count_2 * 1000.0) / elapsed_time;  // Hz
-//
-// }
+ void getFreq() {
+   pulse_count_1 = 0;
+   pulse_count_2 = 0;
+   uint32_t start_time = millis();
+
+   delay(1000);  // Measure for 1 second
+
+   uint32_t elapsed_time = millis() - start_time;
+   freqR = (pulse_count_1 * 1000.0) / elapsed_time;  // Hz
+   freqL = (pulse_count_2 * 1000.0) / elapsed_time;  // Hz
+
+ }
 
 
 //conversion of frequency to MPH
-// void freqToSpeed(){
-//   speedR = (freqR*10/21.33)*3.14*12.5*60/63360;
-//   speedL = (freqL*10/21.33)*3.14*12.5*60/63360;
-// }
+ void freqToSpeed(){
+   speedR = (freqR*10/21.33)*3.14*12.5*60/63360;
+   speedL = (freqL*10/21.33)*3.14*12.5*60/63360;
+ }
 
 void loop() {
 
@@ -219,8 +221,8 @@ void loop() {
     digitalWrite(brakePin, brake);
     dacB.setVoltage(refSpeedR, false);
     dacA.setVoltage(refSpeedL, false);
-    //getFreq();
-    //freqToSpeed();
+    getFreq();
+    freqToSpeed();
 
 #ifdef ROS_DEBUG
     transmitDac(refSpeedL, refSpeedR);
