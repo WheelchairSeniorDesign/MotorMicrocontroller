@@ -226,12 +226,13 @@ void loop() {
     if(eBrake){
         brake = false;
     }
-    transmitDac(refSpeedL, refSpeedR);
 
     if (abs(commTimeSub - commTimeUpdateSpeed) > 0.05) { //hasn't received a message on ROS, so stop moving
         refSpeedL = 0;
         refSpeedR = 0;
     }
+
+    transmitDac(refSpeedL, refSpeedR);
 #endif
 
     digitalWrite(directionLPin,directionL);
