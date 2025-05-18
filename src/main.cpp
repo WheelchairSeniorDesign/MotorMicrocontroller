@@ -64,6 +64,8 @@ const unsigned long freqSampleDuration = 1000; // in ms
 
 bool measuringFreq = false;
 
+double commTimeUpdateSpeed;
+double commTimeSub;
 
 void setup() {
     Serial.begin(115200); // start I2C communication protocol
@@ -149,6 +151,7 @@ void loop() {
     refSpeedSensors = getRefSpeed();
 
 
+
 #endif
 
     //enable = true; // enable the motor controller
@@ -224,6 +227,11 @@ void loop() {
         brake = false;
     }
     transmitDac(refSpeedL, refSpeedR);
+
+    if (abs(commTimeSub - commTimeUpdateSpeed) > 0.05) { //hasn't received a message on ROS, so stop moving
+        refSpeedL = 0;
+        refSpeedR = 0;
+    }
 #endif
 
     digitalWrite(directionLPin,directionL);

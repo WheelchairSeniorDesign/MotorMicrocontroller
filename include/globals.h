@@ -8,4 +8,7 @@
 extern float speedR;
 extern float speedL;
 
+extern double commTimeUpdateSpeed;
+extern double commTimeSub;
+
 #endif //GLOBALS_H

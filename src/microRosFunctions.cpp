@@ -119,6 +119,7 @@ void subscription_callback(const void *msgin)
 {
     const wheelchair_sensor_msgs__msg__RefSpeed *msg = (const wheelchair_sensor_msgs__msg__RefSpeed *)msgin;
     refSpeedMsg = *msg;
+    commTimeSub = millis();
 #ifdef ROS_DEBUG
 
     //Try using Serial1 to use a Uart adapter to print this out
@@ -280,6 +281,7 @@ refSpeed getRefSpeed() {
     refSpeed refSpeed;
     refSpeed.leftSpeed = refSpeedMsg.left_speed;
     refSpeed.rightSpeed = refSpeedMsg.right_speed;
+    commTimeUpdateSpeed = millis();
     return refSpeed;
 }
 
