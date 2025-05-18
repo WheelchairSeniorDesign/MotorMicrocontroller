@@ -1,6 +1,7 @@
 #if defined(ROS) || defined(ROS_DEBUG)
 #include "microRosFunctions.h"
 #include "BatteryFunctions.h"
+#include "globals.h"
 #include <micro_ros_platformio.h>
 #include <wheelchair_sensor_msgs/msg/ref_speed.h>
 #include <wheelchair_sensor_msgs/msg/brake.h>
@@ -99,8 +100,8 @@ void battery_timer_callback(rcl_timer_t *input_timer, int64_t last_call_time) {
 void motor_timer_callback(rcl_timer_t *input_timer, int64_t last_call_time) {
     RCLC_UNUSED(last_call_time);
     if (input_timer != NULL) {
-        motorMsg.left_mph = refSpeedMsg.left_speed;
-        motorMsg.right_mph = refSpeedMsg.right_speed;
+        motorMsg.left_mph = static_cast<int8_t>(speedL);
+        motorMsg.right_mph = static_cast<int8_t>(speedR);
         RCSOFTCHECK(rcl_publish(&motorPublisher, &motorMsg, NULL));
     }
 }
