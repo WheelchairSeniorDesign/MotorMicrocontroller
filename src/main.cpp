@@ -9,7 +9,9 @@ It will also read the speed of the motor and send it to the onboard computer.
 #include <Adafruit_MCP4725.h>
 #include "RefSpeed.h"
 #include "BatteryFunctions.h"
+#include "hardware/watchdog.h"
 #include "globals.h"
+
 
 #if defined(ROS) || defined(ROS_DEBUG)
 #include <micro_ros_platformio.h>
@@ -108,7 +110,7 @@ void setup() {
     pinMode(speedFreqLPin, INPUT_PULLDOWN);
     attachInterrupt(digitalPinToInterrupt(speedFreqRPin), pulse_handler_1, RISING);
     attachInterrupt(digitalPinToInterrupt(speedFreqLPin), pulse_handler_2, RISING);
-
+    watchdog_enable(3000, 1);  // updating the watchdog// set the watchdog to run at 8s interval
 
 
 
@@ -143,7 +145,7 @@ void setup() {
  }
 
 void loop() {
-
+    watchdog_update(); //updating the watchdog
 #if defined(ROS) || defined(ROS_DEBUG)
     microRosTick();
     refSpeedSensors = getRefSpeed();
