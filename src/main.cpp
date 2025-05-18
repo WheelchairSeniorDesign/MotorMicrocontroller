@@ -9,6 +9,7 @@ It will also read the speed of the motor and send it to the onboard computer.
 #include <Adafruit_MCP4725.h>
 #include "RefSpeed.h"
 #include "BatteryFunctions.h"
+#include "hardware/watchdog.h"
 
 #if defined(ROS) || defined(ROS_DEBUG)
 #include <micro_ros_platformio.h>
