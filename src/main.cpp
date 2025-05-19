@@ -9,6 +9,7 @@ It will also read the speed of the motor and send it to the onboard computer.
 #include <Adafruit_MCP4725.h>
 #include "RefSpeed.h"
 #include "BatteryFunctions.h"
+#include "hardware/watchdog.h"
 #include "globals.h"
 
 #if defined(ROS) || defined(ROS_DEBUG)
@@ -45,7 +46,7 @@ bool enable; // enable for motor controller
 int motorSpeed; // value read from the motor speed sensor
 int16_t refSpeedR; // value sent to the motor controller for speed of right motor
 int16_t refSpeedL; // value sent to the motor controller for speed of left motor
-int16_t batteryValue;
+uint32_t lastRosTime; // how much time it has been since the last ROS message was received
 refSpeed refSpeedSensors;
 
 // //variables to handle frequecy reading and tranfer to speed
@@ -63,7 +64,6 @@ unsigned long freqSampleStart = 0;
 const unsigned long freqSampleDuration = 1000; // in ms
 
 bool measuringFreq = false;
-
 
 void setup() {
     Serial.begin(115200); // start I2C communication protocol
@@ -108,11 +108,7 @@ void setup() {
     pinMode(speedFreqLPin, INPUT_PULLDOWN);
     attachInterrupt(digitalPinToInterrupt(speedFreqRPin), pulse_handler_1, RISING);
     attachInterrupt(digitalPinToInterrupt(speedFreqLPin), pulse_handler_2, RISING);
-
-
-
-
-
+    watchdog_enable(3000, 1);  // updating the watchdog// set the watchdog to run at 8s interval
 
 }
 
@@ -132,9 +128,7 @@ void setup() {
         measuringFreq = false;
     }
 
-
  }
-
 
 //conversion of frequency to MPH
  void freqToSpeed(){
@@ -143,10 +137,11 @@ void setup() {
  }
 
 void loop() {
-
+    watchdog_update(); //updating the watchdog
 #if defined(ROS) || defined(ROS_DEBUG)
     microRosTick();
     refSpeedSensors = getRefSpeed();
+    lastRosTime = millis();
 
 
 #endif
@@ -155,7 +150,7 @@ void loop() {
     /*joystickSpeed{} = digitalRead(refSpeedPin); // read the reference speed from the onboard computer
     speedR = joystickSpeed.speedR;
     speedL = joystickSpeed.speedL;
-    */ 
+    */
    // this part will be discussed with the sensors team
     /*
     directionR = true; // initially forward direction
@@ -176,7 +171,7 @@ void loop() {
         refSpeedL = speedL*-1; // set the reference speed to the absolute value of the joystick output
       }
       else{
-        refSpeedR = speedR; // set the referrence speed to the joystick output
+        refSpeedR = speedR; // set the reference speed to the joystick output
         refSpeedL = speedL;
       }
 
@@ -226,6 +221,11 @@ void loop() {
     transmitDac(refSpeedL, refSpeedR);
 #endif
 
+    // if the speed hasn't changed in 5 seconds
+    if (millis() - lastRosMsgTime > 5000) {
+        refSpeedR = 0;
+        refSpeedL = 0;
+    }
     digitalWrite(directionLPin,directionL);
     digitalWrite(directionRPin,directionR);
     digitalWrite(enablePin, enable);
