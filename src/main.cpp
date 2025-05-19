@@ -221,7 +221,7 @@ void loop() {
 #endif
 
     // if the speed hasn't changed in 1 seconds
-    if (millis() - lastRosMsgTime > 1000) {
+    if (millis() - lastRosTime > 1000) {
         refSpeedR = 0;
         refSpeedL = 0;
     }
