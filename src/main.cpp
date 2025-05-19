@@ -143,7 +143,6 @@ void loop() {
     refSpeedSensors = getRefSpeed();
     lastRosTime = millis();
 
-
 #endif
 
     //enable = true; // enable the motor controller
@@ -221,8 +220,8 @@ void loop() {
     transmitDac(refSpeedL, refSpeedR);
 #endif
 
-    // if the speed hasn't changed in 5 seconds
-    if (millis() - lastRosMsgTime > 5000) {
+    // if the speed hasn't changed in 1 seconds
+    if (millis() - lastRosMsgTime > 1000) {
         refSpeedR = 0;
         refSpeedL = 0;
     }
