@@ -222,6 +222,8 @@ void loop() {
     // Adding the ebrake. The brake variable is flipped, so false = brake on
     if(eBrake){
         brake = false;
+    } else {
+        brake = true;
     }
     transmitDac(refSpeedL, refSpeedR);
 #endif
